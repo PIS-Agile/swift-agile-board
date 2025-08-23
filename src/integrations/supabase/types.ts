@@ -14,7 +14,267 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      columns: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+          position: number
+          project_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          position?: number
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          position?: number
+          project_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "columns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_fields: {
+        Row: {
+          created_at: string | null
+          field_type: string
+          id: string
+          name: string
+          options: Json | null
+          project_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          field_type: string
+          id?: string
+          name: string
+          options?: Json | null
+          project_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          field_type?: string
+          id?: string
+          name?: string
+          options?: Json | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_fields_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_assignments: {
+        Row: {
+          assigned_at: string | null
+          id: string
+          item_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          id?: string
+          item_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          id?: string
+          item_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_assignments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_field_values: {
+        Row: {
+          field_id: string | null
+          id: string
+          item_id: string | null
+          value: Json | null
+        }
+        Insert: {
+          field_id?: string | null
+          id?: string
+          item_id?: string | null
+          value?: Json | null
+        }
+        Update: {
+          field_id?: string | null
+          id?: string
+          item_id?: string | null
+          value?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_field_values_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          actual_time: number | null
+          column_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          estimated_time: number | null
+          id: string
+          name: string
+          position: number
+          updated_at: string | null
+        }
+        Insert: {
+          actual_time?: number | null
+          column_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          estimated_time?: number | null
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string | null
+        }
+        Update: {
+          actual_time?: number | null
+          column_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          estimated_time?: number | null
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

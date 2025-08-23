@@ -1,13 +1,339 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { supabase } from '@/integrations/supabase/client';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { AppSidebar } from '@/components/AppSidebar';
+import { KanbanColumn } from '@/components/KanbanColumn';
+import { toast } from '@/hooks/use-toast';
+import { Plus, Menu } from 'lucide-react';
+import type { User, Session } from '@supabase/supabase-js';
+
+interface Column {
+  id: string;
+  name: string;
+  position: number;
+  color: string;
+  project_id: string;
+}
+
+interface Item {
+  id: string;
+  name: string;
+  description: string | null;
+  estimated_time: number | null;
+  actual_time: number;
+  position: number;
+  column_id: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  assignments: Array<{
+    user_id: string;
+    profiles: {
+      full_name: string | null;
+      email: string | null;
+    };
+  }>;
+}
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+}
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('00000000-0000-0000-0000-000000000001');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newColumnDialogOpen, setNewColumnDialogOpen] = useState(false);
+  const [newColumnName, setNewColumnName] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session?.user) {
+          navigate('/auth');
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (!session?.user) {
+        navigate('/auth');
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, selectedProjectId]);
+
+  const fetchData = async () => {
+    try {
+      await Promise.all([
+        fetchProject(),
+        fetchColumns(),
+        fetchItems(),
+        fetchProfiles(),
+      ]);
+    } catch (error: any) {
+      toast({
+        title: "Error loading data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchProject = async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', selectedProjectId)
+      .single();
+
+    if (error) throw error;
+    setSelectedProject(data);
+  };
+
+  const fetchColumns = async () => {
+    const { data, error } = await supabase
+      .from('columns')
+      .select('*')
+      .eq('project_id', selectedProjectId)
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    setColumns(data || []);
+  };
+
+  const fetchItems = async () => {
+    const { data, error } = await supabase
+      .from('items')
+      .select(`
+        *,
+        assignments:item_assignments(
+          user_id,
+          profiles!item_assignments_user_id_fkey(
+            full_name,
+            email
+          )
+        )
+      `)
+      .in('column_id', columns.map(col => col.id));
+
+    if (error) throw error;
+    setItems(data || []);
+  };
+
+  const fetchProfiles = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name', { ascending: true });
+
+    if (error) throw error;
+    setProfiles(data || []);
+  };
+
+  const handleCreateColumn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newColumnName.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('columns')
+        .insert([
+          {
+            name: newColumnName.trim(),
+            project_id: selectedProjectId,
+            position: columns.length,
+            color: '#6366f1',
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setColumns([...columns, data]);
+      setNewColumnName('');
+      setNewColumnDialogOpen(false);
+      
+      toast({
+        title: "Column created",
+        description: `${data.name} has been created successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error creating column",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleItemUpdate = async () => {
+    await fetchItems();
+  };
+
+  const handleColumnUpdate = async () => {
+    await fetchColumns();
+    await fetchItems(); // Refresh items too in case column was deleted
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground">Loading your workspace...</p>
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Auth redirect will handle this
+  }
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full bg-background">
+          <AppSidebar 
+            selectedProjectId={selectedProjectId}
+            onProjectSelect={setSelectedProjectId}
+          />
+          
+          <main className="flex-1 flex flex-col">
+            <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
+              <div className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger />
+                  <div>
+                    <h1 className="text-xl font-semibold">
+                      {selectedProject?.name || 'Loading...'}
+                    </h1>
+                    {selectedProject?.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {selectedProject.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                
+                <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Column
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Column</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateColumn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="column-name">Column Name</Label>
+                        <Input
+                          id="column-name"
+                          value={newColumnName}
+                          onChange={(e) => setNewColumnName(e.target.value)}
+                          placeholder="Enter column name"
+                          required
+                        />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setNewColumnDialogOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit">Create Column</Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </header>
+
+            <div className="flex-1 overflow-auto">
+              <div className="p-6">
+                <div className="flex gap-6 min-h-full">
+                  {columns.map((column) => (
+                    <KanbanColumn
+                      key={column.id}
+                      column={column}
+                      items={items.filter(item => item.column_id === column.id)}
+                      profiles={profiles}
+                      onItemUpdate={handleItemUpdate}
+                      onColumnUpdate={handleColumnUpdate}
+                    />
+                  ))}
+                  
+                  {columns.length === 0 && (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center space-y-4">
+                        <div className="text-4xl opacity-20">📋</div>
+                        <div>
+                          <h3 className="text-lg font-medium text-muted-foreground">
+                            No columns yet
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            Create your first column to get started
+                          </p>
+                        </div>
+                        <Button onClick={() => setNewColumnDialogOpen(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Column
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </SidebarProvider>
+    </DndProvider>
   );
 };
 

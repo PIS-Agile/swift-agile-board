@@ -1,0 +1,285 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { toast } from '@/hooks/use-toast';
+import { Check, X, Users } from 'lucide-react';
+
+interface Item {
+  id: string;
+  name: string;
+  description: string | null;
+  estimated_time: number | null;
+  actual_time: number;
+  assignments: Array<{
+    user_id: string;
+    profiles: {
+      full_name: string | null;
+      email: string | null;
+    };
+  }>;
+}
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+}
+
+interface ItemDialogProps {
+  item?: Item;
+  columnId: string;
+  profiles: Profile[];
+  onSave: () => void;
+  onCancel: () => void;
+}
+
+export function ItemDialog({ item, columnId, profiles, onSave, onCancel }: ItemDialogProps) {
+  const [name, setName] = useState(item?.name || '');
+  const [description, setDescription] = useState(item?.description || '');
+  const [estimatedTime, setEstimatedTime] = useState<string>(item?.estimated_time?.toString() || '');
+  const [actualTime, setActualTime] = useState<string>(item?.actual_time?.toString() || '0');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
+    item?.assignments.map(a => a.user_id) || []
+  );
+  const [assigneePopoverOpen, setAssigneePopoverOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast({
+        title: "Name required",
+        description: "Please enter a name for the item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const itemData = {
+        name: name.trim(),
+        description: description.trim() || null,
+        estimated_time: estimatedTime ? parseInt(estimatedTime) : null,
+        actual_time: actualTime ? parseInt(actualTime) : 0,
+        column_id: columnId,
+        created_by: item ? undefined : user.id,
+      };
+
+      let itemId: string;
+
+      if (item) {
+        // Update existing item
+        const { error } = await supabase
+          .from('items')
+          .update(itemData)
+          .eq('id', item.id);
+
+        if (error) throw error;
+        itemId = item.id;
+      } else {
+        // Create new item
+        const { data, error } = await supabase
+          .from('items')
+          .insert([itemData])
+          .select()
+          .single();
+
+        if (error) throw error;
+        itemId = data.id;
+      }
+
+      // Update assignments
+      // First, remove all existing assignments
+      await supabase
+        .from('item_assignments')
+        .delete()
+        .eq('item_id', itemId);
+
+      // Then, add new assignments
+      if (selectedUserIds.length > 0) {
+        const assignments = selectedUserIds.map(userId => ({
+          item_id: itemId,
+          user_id: userId,
+        }));
+
+        const { error: assignmentError } = await supabase
+          .from('item_assignments')
+          .insert(assignments);
+
+        if (assignmentError) throw assignmentError;
+      }
+
+      toast({
+        title: item ? "Item updated" : "Item created",
+        description: `${name} has been ${item ? 'updated' : 'created'} successfully.`,
+      });
+
+      onSave();
+    } catch (error: any) {
+      toast({
+        title: `Error ${item ? 'updating' : 'creating'} item`,
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const removeUserSelection = (userId: string) => {
+    setSelectedUserIds(prev => prev.filter(id => id !== userId));
+  };
+
+  const getSelectedUsers = () => {
+    return profiles.filter(profile => selectedUserIds.includes(profile.id));
+  };
+
+  const getDisplayName = (profile: Profile) => {
+    return profile.full_name || profile.email || 'Unknown User';
+  };
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="item-name">Name *</Label>
+        <Input
+          id="item-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter item name"
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="item-description">Description</Label>
+        <Textarea
+          id="item-description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Describe the item (optional)"
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="estimated-time">Estimated Time (hours)</Label>
+          <Input
+            id="estimated-time"
+            type="number"
+            min="0"
+            step="0.5"
+            value={estimatedTime}
+            onChange={(e) => setEstimatedTime(e.target.value)}
+            placeholder="0"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="actual-time">Actual Time (hours)</Label>
+          <Input
+            id="actual-time"
+            type="number"
+            min="0"
+            step="0.5"
+            value={actualTime}
+            onChange={(e) => setActualTime(e.target.value)}
+            placeholder="0"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Assigned To</Label>
+        <div className="space-y-2">
+          {getSelectedUsers().length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {getSelectedUsers().map((user) => (
+                <Badge key={user.id} variant="secondary" className="pr-1">
+                  {getDisplayName(user)}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 ml-2 hover:bg-transparent"
+                    onClick={() => removeUserSelection(user.id)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          <Popover open={assigneePopoverOpen} onOpenChange={setAssigneePopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                {selectedUserIds.length === 0 
+                  ? "Select assignees" 
+                  : `${selectedUserIds.length} user${selectedUserIds.length !== 1 ? 's' : ''} selected`
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search users..." />
+                <CommandList>
+                  <CommandEmpty>No users found.</CommandEmpty>
+                  <CommandGroup>
+                    {profiles.map((profile) => (
+                      <CommandItem
+                        key={profile.id}
+                        onSelect={() => toggleUserSelection(profile.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="flex h-4 w-4 items-center justify-center">
+                          {selectedUserIds.includes(profile.id) && (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </div>
+                        <span>{getDisplayName(profile)}</span>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : (item ? 'Update Item' : 'Create Item')}
+        </Button>
+      </div>
+    </form>
+  );
+}

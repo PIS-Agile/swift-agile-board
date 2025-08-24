@@ -89,8 +89,6 @@ const Index = () => {
       
       if (!session?.user) {
         navigate('/auth');
-      } else {
-        setLoading(false);
       }
     });
 
@@ -99,7 +97,8 @@ const Index = () => {
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      setLoading(true);
+      fetchData().finally(() => setLoading(false));
     }
   }, [user, selectedProjectId]);
 
@@ -162,12 +161,14 @@ const Index = () => {
 
   const fetchData = async () => {
     try {
-      await Promise.all([
+      // Fetch project and profiles first
+      const [projectData, profilesData, columnsData] = await Promise.all([
         fetchProject(),
-        fetchColumns(),
-        fetchItems(),
         fetchProfiles(),
+        fetchColumnsData(),
       ]);
+      // Then fetch items using the columns data
+      await fetchItemsForColumns(columnsData);
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -186,6 +187,7 @@ const Index = () => {
 
     if (error) throw error;
     setSelectedProject(data);
+    return data;
   };
 
   const fetchColumns = async () => {
@@ -199,7 +201,24 @@ const Index = () => {
     setColumns(data || []);
   };
 
-  const fetchItems = async () => {
+  const fetchColumnsData = async () => {
+    const { data, error } = await supabase
+      .from('columns')
+      .select('*')
+      .eq('project_id', selectedProjectId)
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    setColumns(data || []);
+    return data || [];
+  };
+
+  const fetchItemsForColumns = async (columnsData: any[]) => {
+    if (!columnsData || columnsData.length === 0) {
+      setItems([]);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('items')
       .select(`
@@ -207,12 +226,41 @@ const Index = () => {
         assignments:item_assignments(
           user_id,
           profiles!item_assignments_user_id_fkey(
+            id,
             full_name,
             email
           )
         )
       `)
-      .in('column_id', columns.map(col => col.id));
+      .in('column_id', columnsData.map(col => col.id))
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    setItems(data || []);
+  };
+
+  const fetchItems = async () => {
+    // Don't try to fetch items if there are no columns yet
+    if (columns.length === 0) {
+      setItems([]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('items')
+      .select(`
+        *,
+        assignments:item_assignments(
+          user_id,
+          profiles!item_assignments_user_id_fkey(
+            id,
+            full_name,
+            email
+          )
+        )
+      `)
+      .in('column_id', columns.map(col => col.id))
+      .order('position', { ascending: true });
 
     if (error) throw error;
     setItems(data || []);
@@ -226,6 +274,7 @@ const Index = () => {
 
     if (error) throw error;
     setProfiles(data || []);
+    return data || [];
   };
 
   const handleCreateColumn = async (e: React.FormEvent) => {
@@ -373,6 +422,7 @@ const Index = () => {
                       column={column}
                       items={items.filter(item => item.column_id === column.id)}
                       profiles={profiles}
+                      projectId={selectedProjectId}
                       onItemUpdate={handleItemUpdate}
                       onColumnUpdate={handleColumnUpdate}
                     />

@@ -34,12 +34,13 @@ interface Profile {
 interface ItemDialogProps {
   item?: Item;
   columnId: string;
+  projectId: string;
   profiles: Profile[];
   onSave: () => void;
   onCancel: () => void;
 }
 
-export function ItemDialog({ item, columnId, profiles, onSave, onCancel }: ItemDialogProps) {
+export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCancel }: ItemDialogProps) {
   const [name, setName] = useState(item?.name || '');
   const [description, setDescription] = useState(item?.description || '');
   const [estimatedTime, setEstimatedTime] = useState<string>(item?.estimated_time?.toString() || '');
@@ -66,12 +67,13 @@ export function ItemDialog({ item, columnId, profiles, onSave, onCancel }: ItemD
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      const itemData = {
+      const itemData: any = {
         name: name.trim(),
         description: description.trim() || null,
         estimated_time: estimatedTime ? parseInt(estimatedTime) : null,
         actual_time: actualTime ? parseInt(actualTime) : 0,
         column_id: columnId,
+        project_id: projectId,
         created_by: item ? undefined : user.id,
       };
 

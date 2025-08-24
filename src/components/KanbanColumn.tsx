@@ -48,11 +48,12 @@ interface KanbanColumnProps {
   column: Column;
   items: Item[];
   profiles: Profile[];
+  projectId: string;
   onItemUpdate: () => void;
   onColumnUpdate: () => void;
 }
 
-export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUpdate }: KanbanColumnProps) {
+export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate, onColumnUpdate }: KanbanColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
@@ -216,6 +217,7 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
               key={item.id}
               item={item}
               columnId={column.id}
+              projectId={projectId}
               profiles={profiles}
               onUpdate={onItemUpdate}
             />
@@ -235,6 +237,7 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
           </DialogHeader>
           <ItemDialog
             columnId={column.id}
+            projectId={projectId}
             profiles={profiles}
             onSave={() => {
               onItemUpdate();

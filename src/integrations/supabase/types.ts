@@ -170,6 +170,7 @@ export type Database = {
           id: string
           name: string
           position: number
+          project_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -182,6 +183,7 @@ export type Database = {
           id?: string
           name: string
           position?: number
+          project_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -194,6 +196,7 @@ export type Database = {
           id?: string
           name?: string
           position?: number
+          project_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -209,6 +212,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]

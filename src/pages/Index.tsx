@@ -648,7 +648,7 @@ const Index = () => {
 
             <div className="flex-1 overflow-auto">
               <div className="p-6 h-full">
-                <div className="flex gap-6 h-full">
+                <div className="flex gap-6 items-start h-full overflow-x-auto">
                   {columns.map((column) => (
                     <KanbanColumn
                       key={column.id}
@@ -656,6 +656,7 @@ const Index = () => {
                       items={filteredItems.filter(item => item.column_id === column.id)}
                       profiles={profiles}
                       projectId={selectedProjectId}
+                      columns={columns}
                       onItemUpdate={handleItemUpdate}
                       onColumnUpdate={handleColumnUpdate}
                       onColumnReorder={handleColumnReorder}

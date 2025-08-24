@@ -341,6 +341,20 @@ export function FilterDropdown({
           
           <ScrollArea className="h-[400px]">
             <div className="p-4 pt-2 space-y-4">
+              {/* Assigned Users - FIRST */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Assigned Users</Label>
+                <MultiSelect
+                  options={profileOptions}
+                  selected={filters.assignedUsers || []}
+                  onChange={(newValues) => setFilters({ ...filters, assignedUsers: newValues })}
+                  placeholder="Select users..."
+                  searchPlaceholder="Search users..."
+                />
+              </div>
+
+              <Separator />
+
               {/* Name & Description */}
               <div className="space-y-3">
                 <div className="space-y-2">
@@ -433,20 +447,6 @@ export function FilterDropdown({
                     />
                   </div>
                 </div>
-              </div>
-
-              <Separator />
-
-              {/* Assigned Users */}
-              <div className="space-y-2">
-                <Label className="text-sm">Assigned Users</Label>
-                <MultiSelect
-                  options={profileOptions}
-                  selected={filters.assignedUsers || []}
-                  onChange={(newValues) => setFilters({ ...filters, assignedUsers: newValues })}
-                  placeholder="Select users..."
-                  searchPlaceholder="Search users..."
-                />
               </div>
 
               {/* Columns */}

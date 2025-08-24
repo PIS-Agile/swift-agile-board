@@ -50,11 +50,19 @@ interface CustomField {
   default_value?: any;
 }
 
+interface Column {
+  id: string;
+  name: string;
+  position: number;
+  project_id: string;
+}
+
 interface ItemDialogV3Props {
   item?: Item;
   columnId: string;
   projectId: string;
   profiles: Profile[];
+  columns?: Column[];
   onSave: () => void;
   onCancel: () => void;
 }
@@ -195,13 +203,14 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
   );
 }
 
-export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCancel }: ItemDialogV3Props) {
+export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onSave, onCancel }: ItemDialogV3Props) {
   const [name, setName] = useState(item?.name || '');
   const [estimatedTime, setEstimatedTime] = useState<string>(item?.estimated_time?.toString() || '');
   const [actualTime, setActualTime] = useState<string>(item?.actual_time?.toString() || '0');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
     item?.assignments.map(a => a.user_id) || []
   );
+  const [selectedColumnId, setSelectedColumnId] = useState<string>(columnId);
   const [loading, setLoading] = useState(false);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
@@ -345,6 +354,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
             description,
             estimated_time: estimatedTime ? parseFloat(estimatedTime) : null,
             actual_time: actualTime ? parseFloat(actualTime) : 0,
+            column_id: selectedColumnId,
           })
           .eq('id', item.id);
 
@@ -422,7 +432,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
             description,
             estimated_time: estimatedTime ? parseFloat(estimatedTime) : null,
             actual_time: actualTime ? parseFloat(actualTime) : 0,
-            column_id: columnId,
+            column_id: selectedColumnId,
             project_id: projectId,
             position: nextPosition,
           })
@@ -654,6 +664,28 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
                   Properties
                 </h3>
                 <div className="space-y-4">
+                  {/* Column */}
+                  {columns && columns.length > 0 && (
+                    <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
+                      <Label className="text-right flex items-center justify-end gap-1">
+                        <FileText className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm">Column</span>
+                      </Label>
+                      <Select value={selectedColumnId} onValueChange={setSelectedColumnId}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {columns.sort((a, b) => a.position - b.position).map(col => (
+                            <SelectItem key={col.id} value={col.id}>
+                              {col.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {/* Estimated Time */}
                   <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
                     <Label className="text-right flex items-center justify-end gap-1">

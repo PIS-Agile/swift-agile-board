@@ -49,12 +49,13 @@ interface KanbanColumnProps {
   items: Item[];
   profiles: Profile[];
   projectId: string;
+  columns?: Column[];
   onItemUpdate: () => void;
   onColumnUpdate: () => void;
   onColumnReorder?: (draggedColumnId: string, targetColumnId: string) => void;
 }
 
-export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate, onColumnUpdate, onColumnReorder }: KanbanColumnProps) {
+export function KanbanColumn({ column, items, profiles, projectId, columns, onItemUpdate, onColumnUpdate, onColumnReorder }: KanbanColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
@@ -300,7 +301,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
   return (
     <div
       ref={combinedRef}
-      className={`kanban-column p-4 w-80 flex-shrink-0 transition-all relative ${
+      className={`kanban-column p-4 w-80 flex-shrink-0 transition-all relative flex flex-col h-fit ${
         isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
       } ${
         isOver ? 'ring-2 ring-primary ring-opacity-50' : ''
@@ -390,7 +391,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
         )}
       </div>
 
-      <div className="space-y-3 mb-4 relative">
+      <div className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
         {items
           .sort((a, b) => a.position - b.position)
           .map((item, index) => (
@@ -403,6 +404,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
                 columnId={column.id}
                 projectId={projectId}
                 profiles={profiles}
+                columns={columns}
                 onUpdate={onItemUpdate}
               />
             </div>
@@ -428,6 +430,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
               columnId={column.id}
               projectId={projectId}
               profiles={profiles}
+              columns={columns}
               onSave={() => {
                 onItemUpdate();
                 setItemDialogOpen(false);

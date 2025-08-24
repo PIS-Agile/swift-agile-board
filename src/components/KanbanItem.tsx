@@ -49,10 +49,11 @@ interface KanbanItemProps {
   columnId: string;
   projectId: string;
   profiles: Profile[];
+  columns?: any[];
   onUpdate: () => void;
 }
 
-export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: KanbanItemProps) {
+export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpdate }: KanbanItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -303,6 +304,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
               columnId={columnId}
               projectId={projectId}
               profiles={profiles}
+              columns={columns}
               onSave={() => {
                 onUpdate();
                 setEditDialogOpen(false);

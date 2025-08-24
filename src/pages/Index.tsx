@@ -529,9 +529,7 @@ const Index = () => {
           
           <main className="flex-1 flex flex-col h-screen overflow-hidden">
             <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 flex-shrink-0">
-              <div className="flex flex-col">
-                {/* First row - Title and main actions */}
-                <div className="flex items-center justify-between p-4 pb-3">
+              <div className="flex items-center justify-between p-4">
                   <div className="flex items-center gap-4">
                     <SidebarTrigger />
                     <div>
@@ -550,6 +548,13 @@ const Index = () => {
                     <RealtimeStatus />
                     
                     <div className="flex gap-2">
+                      <FilterDropdown
+                        projectId={selectedProjectId}
+                        onApplyFilters={handleApplyFilters}
+                        currentFilters={filters}
+                        columns={columns}
+                      />
+                      
                       <Button
                         size="sm"
                         variant="outline"
@@ -624,17 +629,6 @@ const Index = () => {
                     </Dialog>
                     </div>
                   </div>
-                </div>
-                
-                {/* Second row - Filters */}
-                <div className="px-4 pb-3">
-                  <FilterDropdown
-                    projectId={selectedProjectId}
-                    onApplyFilters={handleApplyFilters}
-                    currentFilters={filters}
-                    columns={columns}
-                  />
-                </div>
               </div>
             </header>
 

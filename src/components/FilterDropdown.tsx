@@ -147,22 +147,6 @@ export function FilterDropdown({
     onApplyFilters(emptyFilters);
   };
 
-  const handleClearFilter = (filterKey: string) => {
-    const newFilters = { ...filters };
-    if (filterKey === 'assignedUsers' || filterKey === 'columns') {
-      newFilters[filterKey] = [];
-    } else if (filterKey.startsWith('customField-')) {
-      const fieldId = filterKey.replace('customField-', '');
-      if (newFilters.customFields) {
-        delete newFilters.customFields[fieldId];
-      }
-    } else {
-      delete newFilters[filterKey as keyof FilterCriteria];
-    }
-    setFilters(newFilters);
-    onApplyFilters(newFilters);
-  };
-
   // Convert profiles to MultiSelectOptions
   const profileOptions: MultiSelectOption[] = profiles.map(profile => ({
     value: profile.id,
@@ -323,66 +307,22 @@ export function FilterDropdown({
     }
   };
 
-  // Get active filter badges
-  const getActiveFilterBadges = () => {
-    const badges = [];
-    
-    if (filters.name) {
-      badges.push(
-        <Badge key="name" variant="secondary" className="gap-1">
-          Name: {filters.name}
-          <X 
-            className="h-3 w-3 cursor-pointer hover:text-destructive" 
-            onClick={() => handleClearFilter('name')}
-          />
-        </Badge>
-      );
-    }
-    
-    if (filters.assignedUsers && filters.assignedUsers.length > 0) {
-      badges.push(
-        <Badge key="users" variant="secondary" className="gap-1">
-          {filters.assignedUsers.length} user{filters.assignedUsers.length !== 1 ? 's' : ''}
-          <X 
-            className="h-3 w-3 cursor-pointer hover:text-destructive" 
-            onClick={() => handleClearFilter('assignedUsers')}
-          />
-        </Badge>
-      );
-    }
-    
-    if (filters.columns && filters.columns.length > 0) {
-      badges.push(
-        <Badge key="columns" variant="secondary" className="gap-1">
-          {filters.columns.length} column{filters.columns.length !== 1 ? 's' : ''}
-          <X 
-            className="h-3 w-3 cursor-pointer hover:text-destructive" 
-            onClick={() => handleClearFilter('columns')}
-          />
-        </Badge>
-      );
-    }
-    
-    return badges;
-  };
-
   return (
-    <div className="flex items-center gap-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            size="sm"
-            variant={activeFiltersCount > 0 ? 'default' : 'outline'}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-2 bg-background text-foreground">
-                {activeFiltersCount}
-              </Badge>
-            )}
-          </Button>
-        </PopoverTrigger>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          size="sm"
+          variant={activeFiltersCount > 0 ? 'default' : 'outline'}
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          Filter
+          {activeFiltersCount > 0 && (
+            <Badge variant="secondary" className="ml-2 bg-background text-foreground">
+              {activeFiltersCount}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
           <div className="flex items-center justify-between p-4 pb-2">
             <h4 className="font-medium text-sm">Filters</h4>
@@ -545,13 +485,5 @@ export function FilterDropdown({
           </div>
         </PopoverContent>
       </Popover>
-      
-      {/* Active filter badges */}
-      {activeFiltersCount > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
-          {getActiveFilterBadges()}
-        </div>
-      )}
-    </div>
   );
 }

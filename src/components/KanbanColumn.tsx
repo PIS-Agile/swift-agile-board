@@ -72,22 +72,43 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
   const itemsRef = useRef<HTMLDivElement>(null);
 
 
-  // Enable scroll during drag
+  // Enable scroll during drag - use a more robust approach
   useEffect(() => {
     if (!itemsRef.current) return;
     
     const handleWheel = (e: WheelEvent) => {
-      if (isDraggingGlobal && itemsRef.current) {
-        e.preventDefault();
+      // Always allow scrolling in the items container
+      if (itemsRef.current && itemsRef.current.contains(e.target as Node)) {
+        // Don't prevent default, just scroll naturally
+        // But during drag, we may need to handle it differently
+        if (isDraggingGlobal) {
+          // Stop propagation to prevent conflicts with drag-and-drop
+          e.stopPropagation();
+        }
+      }
+    };
+    
+    // Use capturing phase to get events before react-dnd
+    const element = itemsRef.current;
+    element.addEventListener('wheel', handleWheel, { capture: true, passive: true });
+    
+    // Also add a global wheel handler during drag
+    const globalWheelHandler = (e: WheelEvent) => {
+      if (!isDraggingGlobal || !itemsRef.current) return;
+      
+      // Check if mouse is over this column's items area
+      const rect = itemsRef.current.getBoundingClientRect();
+      if (e.clientX >= rect.left && e.clientX <= rect.right &&
+          e.clientY >= rect.top && e.clientY <= rect.bottom) {
         itemsRef.current.scrollTop += e.deltaY;
       }
     };
     
-    const element = itemsRef.current;
-    element.addEventListener('wheel', handleWheel, { passive: false });
+    document.addEventListener('wheel', globalWheelHandler, { capture: true });
     
     return () => {
       element.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('wheel', globalWheelHandler);
     };
   }, [isDraggingGlobal]);
 
@@ -411,7 +432,20 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
       <div 
         ref={itemsRef}
         className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 no-scrollbar"
-        style={{ pointerEvents: isDraggingGlobal ? 'auto' : undefined }}
+        style={{ 
+          // Ensure scrolling works during drag
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch'
+        }}
+        onWheel={(e) => {
+          // Handle wheel events directly on the container
+          if (isDraggingGlobal) {
+            // During drag, manually scroll without interfering with drag
+            const target = e.currentTarget;
+            target.scrollTop += e.deltaY;
+            // Don't stop propagation or prevent default
+          }
+        }}
       >
         {items
           .sort((a, b) => a.position - b.position)

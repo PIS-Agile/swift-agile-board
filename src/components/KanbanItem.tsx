@@ -203,25 +203,46 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
             <div className="space-y-1 pt-1 border-t">
               {item.custom_field_values.slice(0, 3).map((fieldValue) => {
                 const value = fieldValue.value;
-                if (!value || value === '') return null;
+                const fieldType = fieldValue.custom_fields.field_type;
+                
+                // Skip empty values
+                if (!value || value === '' || (Array.isArray(value) && value.length === 0)) return null;
+                
+                // Skip invalid user selections (UUID-like strings that don't match any user)
+                if (fieldType === 'user_select' || fieldType === 'user_multiselect') {
+                  if (typeof value === 'string') {
+                    const user = profiles.find(p => p.id === value);
+                    if (!user) return null; // Skip if user not found
+                  } else if (Array.isArray(value)) {
+                    const validUsers = value.filter(userId => 
+                      profiles.find(p => p.id === userId)
+                    );
+                    if (validUsers.length === 0) return null; // Skip if no valid users
+                  }
+                }
                 
                 let displayValue: any = value;
-                const fieldType = fieldValue.custom_fields.field_type;
                 
                 // Format value based on field type
                 if (fieldType === 'date') {
                   displayValue = new Date(value).toLocaleDateString();
                 } else if (fieldType === 'user_select') {
                   const user = profiles.find(p => p.id === value);
-                  displayValue = user ? (user.full_name || user.email || 'Unknown') : value;
+                  displayValue = user ? (user.full_name || user.email || 'Unknown') : null;
                 } else if (fieldType === 'user_multiselect' && Array.isArray(value)) {
-                  displayValue = value.map(userId => {
-                    const user = profiles.find(p => p.id === userId);
-                    return user ? (user.full_name || user.email || 'Unknown') : userId;
-                  }).join(', ');
+                  const validUsers = value
+                    .map(userId => {
+                      const user = profiles.find(p => p.id === userId);
+                      return user ? (user.full_name || user.email || 'Unknown') : null;
+                    })
+                    .filter(Boolean);
+                  if (validUsers.length === 0) return null;
+                  displayValue = validUsers.join(', ');
                 } else if (Array.isArray(value)) {
                   displayValue = value.join(', ');
                 }
+                
+                if (!displayValue) return null;
                 
                 return (
                   <div key={fieldValue.field_id} className="text-xs text-muted-foreground">

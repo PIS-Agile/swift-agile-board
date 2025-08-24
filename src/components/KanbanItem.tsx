@@ -162,12 +162,6 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
           )}
         </div>
 
-        {item.description && (
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-4">
-            {item.description}
-          </p>
-        )}
-
         <div className="space-y-2">
           {(item.estimated_time || item.actual_time > 0) && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">

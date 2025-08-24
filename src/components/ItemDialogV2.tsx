@@ -551,10 +551,10 @@ export function ItemDialogV2({ item, columnId, projectId, profiles, onSave, onCa
 
   return (
     <form onSubmit={handleSave} className="h-full flex flex-col">
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Name & Description */}
-        <div className="flex-1 flex flex-col p-6 border-r">
-          <div className="space-y-4">
+        <div className="flex-1 flex flex-col p-6 border-r overflow-hidden">
+          <div className="flex flex-col h-full space-y-4">
             <div>
               <Input
                 value={name}
@@ -565,17 +565,19 @@ export function ItemDialogV2({ item, columnId, projectId, profiles, onSave, onCa
               />
             </div>
             
-            <div className="flex-1">
-              <div className="border rounded-lg overflow-hidden">
+            <div className="flex-1 overflow-hidden">
+              <div className="border rounded-lg h-full flex flex-col">
                 <EditorToolbar editor={editor} />
-                <EditorContent editor={editor} />
+                <div className="flex-1 overflow-y-auto">
+                  <EditorContent editor={editor} />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Panel - Properties */}
-        <div className="w-[400px] bg-muted/30">
+        <div className="w-[400px] bg-muted/30 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-6 space-y-6">
               {/* Built-in Fields */}

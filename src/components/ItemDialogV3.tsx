@@ -629,12 +629,12 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
   };
 
   return (
-    <form onSubmit={handleSave} className="h-full flex flex-col">
+    <form onSubmit={handleSave} className="h-full flex flex-col overflow-hidden">
       {/* Main content area with two panels */}
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Name & Description */}
-        <div className="flex-1 flex flex-col border-r min-w-0">
-          <div className="p-6 pb-3">
+        <div className="flex-1 flex flex-col border-r overflow-hidden">
+          <div className="p-6 pb-3 flex-shrink-0">
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -644,10 +644,10 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
             />
           </div>
           
-          <div className="flex-1 px-6 pb-6 min-h-0 flex flex-col">
-            <div className="border rounded-lg flex-1 flex flex-col min-h-0">
+          <div className="flex-1 px-6 pb-6 overflow-hidden flex flex-col">
+            <div className="border rounded-lg flex-1 flex flex-col overflow-hidden">
               <EditorToolbar editor={editor} />
-              <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="flex-1 overflow-y-auto">
                 <EditorContent editor={editor} className="h-full" />
               </div>
             </div>
@@ -655,9 +655,8 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
         </div>
 
         {/* Right Panel - Properties */}
-        <div className="w-[400px] bg-muted/30 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-6 space-y-6">
+        <div className="w-[400px] bg-muted/30 overflow-y-auto">
+          <div className="p-6 space-y-6">
               {/* Built-in Fields */}
               <div>
                 <h3 className="font-semibold mb-4 flex items-center gap-2">
@@ -755,12 +754,11 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
                 </>
               )}
             </div>
-          </div>
         </div>
       </div>
 
       {/* Footer Actions - Always visible */}
-      <div className="border-t p-4 flex justify-end gap-2 bg-background">
+      <div className="border-t p-4 flex justify-end gap-2 bg-background flex-shrink-0">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>

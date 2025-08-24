@@ -267,23 +267,25 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
       if (!item) {
         const defaults: Record<string, any> = {};
         fields.forEach(field => {
-          if (field.default_value !== null && field.default_value !== undefined) {
-            // Validate user fields - ensure default users exist
-            if (field.field_type === 'user_select') {
+          // For user fields, always set a value (null if invalid/empty)
+          if (field.field_type === 'user_select') {
+            if (field.default_value !== null && field.default_value !== undefined) {
               const userExists = profiles.some(p => p.id === field.default_value);
-              if (userExists) {
-                defaults[field.id] = field.default_value;
-              }
-            } else if (field.field_type === 'user_multiselect' && Array.isArray(field.default_value)) {
+              defaults[field.id] = userExists ? field.default_value : null;
+            } else {
+              defaults[field.id] = null;
+            }
+          } else if (field.field_type === 'user_multiselect') {
+            if (field.default_value !== null && field.default_value !== undefined && Array.isArray(field.default_value)) {
               const validUsers = field.default_value.filter(userId => 
                 profiles.some(p => p.id === userId)
               );
-              if (validUsers.length > 0) {
-                defaults[field.id] = validUsers;
-              }
+              defaults[field.id] = validUsers.length > 0 ? validUsers : [];
             } else {
-              defaults[field.id] = field.default_value;
+              defaults[field.id] = [];
             }
+          } else if (field.default_value !== null && field.default_value !== undefined) {
+            defaults[field.id] = field.default_value;
           }
         });
         setCustomFieldValues(prev => ({ ...defaults, ...prev }));
@@ -391,8 +393,27 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
 
         // Update custom field values
         for (const [fieldId, value] of Object.entries(customFieldValues)) {
-          if (value === null || value === undefined || value === '' || 
-              (Array.isArray(value) && value.length === 0)) {
+          const field = customFields.find(f => f.id === fieldId);
+          let validatedValue = value;
+          
+          // Validate user fields
+          if (field?.field_type === 'user_select') {
+            if (value && typeof value === 'string') {
+              const userExists = profiles.some(p => p.id === value);
+              validatedValue = userExists ? value : null;
+            } else {
+              validatedValue = null;
+            }
+          } else if (field?.field_type === 'user_multiselect') {
+            if (value && Array.isArray(value)) {
+              validatedValue = value.filter(userId => profiles.some(p => p.id === userId));
+            } else {
+              validatedValue = [];
+            }
+          }
+          
+          if (validatedValue === null || validatedValue === undefined || validatedValue === '' || 
+              (Array.isArray(validatedValue) && validatedValue.length === 0)) {
             await supabase
               .from('item_field_values')
               .delete()
@@ -409,7 +430,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
             if (existing) {
               await supabase
                 .from('item_field_values')
-                .update({ value })
+                .update({ value: validatedValue })
                 .eq('id', existing.id);
             } else {
               await supabase
@@ -417,7 +438,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                 .insert({
                   item_id: item.id,
                   field_id: fieldId,
-                  value
+                  value: validatedValue
                 });
             }
           }
@@ -468,26 +489,37 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         // Create custom field values
         const fieldValueInserts = [];
         for (const [fieldId, value] of Object.entries(customFieldValues)) {
-          if (value !== null && value !== undefined && value !== '' && 
-              (!Array.isArray(value) || value.length > 0)) {
-            
-            // Get field type
-            const field = customFields.find(f => f.id === fieldId);
-            let validatedValue = value;
-            
-            // Validate user fields before saving
-            if (field?.field_type === 'user_select' && typeof value === 'string') {
+          const field = customFields.find(f => f.id === fieldId);
+          
+          // For user fields, always save (even null/empty values)
+          if (field?.field_type === 'user_select') {
+            let validatedValue = null;
+            if (value && typeof value === 'string') {
               const userExists = profiles.some(p => p.id === value);
-              if (!userExists) continue; // Skip invalid user ID
-            } else if (field?.field_type === 'user_multiselect' && Array.isArray(value)) {
-              validatedValue = value.filter(userId => profiles.some(p => p.id === userId));
-              if (validatedValue.length === 0) continue; // Skip if no valid users
+              validatedValue = userExists ? value : null;
             }
-            
             fieldValueInserts.push({
               item_id: newItem.id,
               field_id: fieldId,
               value: validatedValue
+            });
+          } else if (field?.field_type === 'user_multiselect') {
+            let validatedValue = [];
+            if (value && Array.isArray(value)) {
+              validatedValue = value.filter(userId => profiles.some(p => p.id === userId));
+            }
+            fieldValueInserts.push({
+              item_id: newItem.id,
+              field_id: fieldId,
+              value: validatedValue
+            });
+          } else if (value !== null && value !== undefined && value !== '' && 
+                     (!Array.isArray(value) || value.length > 0)) {
+            // For non-user fields, only save if they have a value
+            fieldValueInserts.push({
+              item_id: newItem.id,
+              field_id: fieldId,
+              value: value
             });
           }
         }

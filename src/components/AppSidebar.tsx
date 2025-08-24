@@ -293,23 +293,25 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                     </SidebarMenuButton>
                     {!isCollapsed && hoveredProjectId === project.id && project.id !== '00000000-0000-0000-0000-000000000001' && (
                       <DropdownMenu>
-                        <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-6 w-6 p-0">
-                          <MoreHorizontal className="h-3 w-3" />
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                          >
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditProject(project);
-                            }}
+                            onSelect={() => startEditProject(project)}
                           >
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Project
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onSelect={() => {
                               if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
                                 handleDeleteProject(project.id);
                               }

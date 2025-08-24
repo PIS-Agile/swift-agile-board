@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
 import { CustomFieldsDialog } from '@/components/CustomFieldsDialog';
+import { TestDropdown } from '@/components/TestDropdown';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2 } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';

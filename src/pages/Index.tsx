@@ -15,7 +15,7 @@ import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
-import { useRealtimeSimple } from '@/hooks/useRealtimeSimple';
+import { useRealtimeWorking } from '@/hooks/useRealtimeWorking';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
@@ -229,8 +229,8 @@ const Index = () => {
     fetchItems();
   }, [fetchColumns, fetchItems]);
 
-  // Use the simplified realtime subscription hook
-  useRealtimeSimple({
+  // Use the working realtime subscription hook
+  const { isConnected } = useRealtimeWorking({
     projectId: selectedProjectId,
     onDataChange: handleDataChange,
     enabled: !!user && !!selectedProjectId
@@ -240,8 +240,9 @@ const Index = () => {
   useEffect(() => {
     if (user && selectedProjectId) {
       console.log('✅ Real-time listening for project:', selectedProjectId);
+      console.log('📡 Connection status:', isConnected ? 'Connected' : 'Connecting...');
     }
-  }, [user, selectedProjectId]);
+  }, [user, selectedProjectId, isConnected]);
   
   // Debug: Force refresh button (only in development)
   const forceRefresh = () => {
@@ -546,7 +547,7 @@ const Index = () => {
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <RealtimeStatus isConnected={true} />
+                    <RealtimeStatus isConnected={isConnected} />
                     
                     {process.env.NODE_ENV === 'development' && (
                       <Button

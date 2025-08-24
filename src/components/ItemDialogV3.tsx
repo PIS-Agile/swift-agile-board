@@ -734,6 +734,21 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                   Properties
                 </h3>
                 <div className="space-y-4">
+                  {/* Item ID - Read only */}
+                  {item && item.item_id && (
+                    <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
+                      <Label className="text-right flex items-center justify-end gap-1">
+                        <Hash className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm">Item ID</span>
+                      </Label>
+                      <Input 
+                        value={`#${item.item_id}`}
+                        disabled
+                        className="bg-muted/50"
+                      />
+                    </div>
+                  )}
+                  
                   {/* Column */}
                   {columns && columns.length > 0 && (
                     <div className="grid grid-cols-[120px,1fr] gap-4 items-center">

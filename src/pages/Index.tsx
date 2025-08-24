@@ -220,6 +220,10 @@ const Index = () => {
 
       if (error) throw error;
       console.log('📦 Fetched items:', data?.length || 0);
+      // Debug: Check if item_id is included
+      if (data && data.length > 0) {
+        console.log('First item data:', data[0]);
+      }
       setItems(data || []);
     } catch (error) {
       console.error('Error fetching items:', error);

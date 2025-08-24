@@ -462,17 +462,12 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
           ? itemsInColumn[0].position + 1 
           : 0;
 
-        // Get next item_id for this project
-        const { data: maxItemId } = await supabase
-          .from('items')
-          .select('item_id')
-          .eq('project_id', projectId)
-          .order('item_id', { ascending: false })
-          .limit(1);
+        // Get next item_id for this project using the database function
+        const { data: itemIdData, error: itemIdError } = await supabase
+          .rpc('get_next_item_id', { p_project_id: projectId });
 
-        const nextItemId = maxItemId && maxItemId.length > 0 
-          ? maxItemId[0].item_id + 1 
-          : 1;
+        if (itemIdError) throw itemIdError;
+        const nextItemId = itemIdData || 1;
 
         const { data: newItem, error: createError } = await supabase
           .from('items')

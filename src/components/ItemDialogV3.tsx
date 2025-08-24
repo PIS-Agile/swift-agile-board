@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import { toast } from '@/hooks/use-toast';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -538,27 +539,22 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
         );
       
       case 'multiselect':
+        const multiselectValue = Array.isArray(value) ? value : [];
         return (
-          <div className="space-y-2 border rounded-md p-2 max-h-32 overflow-y-auto">
-            {field.options?.map((option) => (
-              <label key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  checked={Array.isArray(value) && value.includes(option)}
-                  onCheckedChange={(checked) => {
-                    const currentValue = Array.isArray(value) ? value : [];
-                    const newValue = checked
-                      ? [...currentValue, option]
-                      : currentValue.filter(v => v !== option);
-                    setCustomFieldValues({
-                      ...customFieldValues,
-                      [field.id]: newValue
-                    });
-                  }}
-                />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
-          </div>
+          <MultiSelect
+            options={(field.options || []).map(option => ({
+              value: option,
+              label: option,
+            }))}
+            selected={multiselectValue}
+            onChange={(newValues) => setCustomFieldValues({
+              ...customFieldValues,
+              [field.id]: newValues
+            })}
+            placeholder="Select options..."
+            searchPlaceholder="Search options..."
+            emptyText="No options available"
+          />
         );
       
       case 'user_select':
@@ -585,29 +581,22 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
         );
       
       case 'user_multiselect':
+        const userMultiselectValue = Array.isArray(value) ? value : [];
         return (
-          <div className="space-y-2 border rounded-md p-2 max-h-32 overflow-y-auto">
-            {profiles.map((profile) => (
-              <label key={profile.id} className="flex items-center space-x-2">
-                <Checkbox
-                  checked={Array.isArray(value) && value.includes(profile.id)}
-                  onCheckedChange={(checked) => {
-                    const currentValue = Array.isArray(value) ? value : [];
-                    const newValue = checked
-                      ? [...currentValue, profile.id]
-                      : currentValue.filter(v => v !== profile.id);
-                    setCustomFieldValues({
-                      ...customFieldValues,
-                      [field.id]: newValue
-                    });
-                  }}
-                />
-                <span className="text-sm">
-                  {profile.full_name || profile.email || 'Unknown'}
-                </span>
-              </label>
-            ))}
-          </div>
+          <MultiSelect
+            options={profiles.map(profile => ({
+              value: profile.id,
+              label: profile.full_name || profile.email || 'Unknown',
+            }))}
+            selected={userMultiselectValue}
+            onChange={(newValues) => setCustomFieldValues({
+              ...customFieldValues,
+              [field.id]: newValues
+            })}
+            placeholder="Select users..."
+            searchPlaceholder="Search users..."
+            emptyText="No users found"
+          />
         );
       
       default:
@@ -710,25 +699,17 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
                       <Users className="h-3 w-3 text-muted-foreground" />
                       <span className="text-sm">Assigned to</span>
                     </Label>
-                    <div className="space-y-2 border rounded-md p-2 max-h-32 overflow-y-auto">
-                      {profiles.map((profile) => (
-                        <label key={profile.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={selectedUserIds.includes(profile.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedUserIds([...selectedUserIds, profile.id]);
-                              } else {
-                                setSelectedUserIds(selectedUserIds.filter(id => id !== profile.id));
-                              }
-                            }}
-                          />
-                          <span className="text-sm">
-                            {profile.full_name || profile.email || 'Unknown'}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
+                    <MultiSelect
+                      options={profiles.map(profile => ({
+                        value: profile.id,
+                        label: profile.full_name || profile.email || 'Unknown',
+                      }))}
+                      selected={selectedUserIds}
+                      onChange={setSelectedUserIds}
+                      placeholder="Select users..."
+                      searchPlaceholder="Search users..."
+                      emptyText="No users found"
+                    />
                   </div>
                 </div>
               </div>

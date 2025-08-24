@@ -12,12 +12,12 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
 import { CustomFieldsDialogV2 } from '@/components/CustomFieldsDialogV2';
 import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
-import { FilterDialog, FilterCriteria } from '@/components/FilterDialog';
+import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Menu, Settings2, FileText, Filter } from 'lucide-react';
+import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface Column {
@@ -82,7 +82,6 @@ const Index = () => {
   const [newColumnColor, setNewColumnColor] = useState('#6366f1');
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
   const [defaultValuesDialogOpen, setDefaultValuesDialogOpen] = useState(false);
-  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
   const [filters, setFilters] = useState<FilterCriteria>({});
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const navigate = useNavigate();
@@ -549,37 +548,12 @@ const Index = () => {
                   <RealtimeStatus />
                   
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant={Object.keys(filters).some(key => 
-                        filters[key as keyof FilterCriteria] !== undefined && 
-                        filters[key as keyof FilterCriteria] !== null && 
-                        (Array.isArray(filters[key as keyof FilterCriteria]) ? 
-                          (filters[key as keyof FilterCriteria] as any[]).length > 0 : 
-                          filters[key as keyof FilterCriteria] !== '')
-                      ) ? 'default' : 'outline'}
-                      onClick={() => setFilterDialogOpen(true)}
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filter
-                      {Object.keys(filters).some(key => 
-                        filters[key as keyof FilterCriteria] !== undefined && 
-                        filters[key as keyof FilterCriteria] !== null && 
-                        (Array.isArray(filters[key as keyof FilterCriteria]) ? 
-                          (filters[key as keyof FilterCriteria] as any[]).length > 0 : 
-                          filters[key as keyof FilterCriteria] !== '')
-                      ) && (
-                        <span className="ml-1 bg-background text-foreground rounded-full px-1.5 py-0.5 text-xs">
-                          {Object.keys(filters).filter(key => 
-                            filters[key as keyof FilterCriteria] !== undefined && 
-                            filters[key as keyof FilterCriteria] !== null && 
-                            (Array.isArray(filters[key as keyof FilterCriteria]) ? 
-                              (filters[key as keyof FilterCriteria] as any[]).length > 0 : 
-                              filters[key as keyof FilterCriteria] !== '')
-                          ).length}
-                        </span>
-                      )}
-                    </Button>
+                    <FilterDropdown
+                      projectId={selectedProjectId}
+                      onApplyFilters={handleApplyFilters}
+                      currentFilters={filters}
+                      columns={columns}
+                    />
                     
                     <Button
                       size="sm"
@@ -709,15 +683,6 @@ const Index = () => {
           projectId={selectedProjectId}
           open={defaultValuesDialogOpen}
           onOpenChange={setDefaultValuesDialogOpen}
-        />
-        
-        <FilterDialog
-          projectId={selectedProjectId}
-          open={filterDialogOpen}
-          onOpenChange={setFilterDialogOpen}
-          onApplyFilters={handleApplyFilters}
-          currentFilters={filters}
-          columns={columns}
         />
       </SidebarProvider>
     </DndProvider>

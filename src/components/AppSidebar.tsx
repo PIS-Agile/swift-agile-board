@@ -51,6 +51,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDescription, setEditProjectDescription] = useState('');
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const { state } = useSidebar();
   const navigate = useNavigate();
 
@@ -291,8 +292,11 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                       <FolderKanban className="h-4 w-4" />
                       {!isCollapsed && <span>{project.name}</span>}
                     </SidebarMenuButton>
-                    {!isCollapsed && hoveredProjectId === project.id && project.id !== '00000000-0000-0000-0000-000000000001' && (
-                      <DropdownMenu>
+                    {!isCollapsed && (hoveredProjectId === project.id || dropdownOpen === project.id) && project.id !== '00000000-0000-0000-0000-000000000001' && (
+                      <DropdownMenu 
+                        open={dropdownOpen === project.id} 
+                        onOpenChange={(open) => setDropdownOpen(open ? project.id : null)}
+                      >
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
@@ -304,7 +308,10 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem
-                            onSelect={() => startEditProject(project)}
+                            onSelect={() => {
+                              startEditProject(project);
+                              setDropdownOpen(null);
+                            }}
                           >
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Project
@@ -315,6 +322,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                               if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
                                 handleDeleteProject(project.id);
                               }
+                              setDropdownOpen(null);
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />

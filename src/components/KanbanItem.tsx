@@ -48,6 +48,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
   const [isHovered, setIsHovered] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [{ isDragging }, drag] = useDrag({
     type: 'item',
@@ -102,8 +103,8 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h4 className="font-medium text-sm flex-1 pr-2">{item.name}</h4>
-          {isHovered && (
-            <DropdownMenu>
+          {(isHovered || dropdownOpen) && (
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -115,14 +116,20 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem
-                  onSelect={() => setEditDialogOpen(true)}
+                  onSelect={() => {
+                    setEditDialogOpen(true);
+                    setDropdownOpen(false);
+                  }}
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit Item
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onSelect={() => setDeleteDialogOpen(true)}
+                  onSelect={() => {
+                    setDeleteDialogOpen(true);
+                    setDropdownOpen(false);
+                  }}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Item

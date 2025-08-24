@@ -59,6 +59,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
   const [editingColumn, setEditingColumn] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [{ isOver }, drop] = useDrop({
     accept: 'item',
@@ -185,8 +186,8 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
           </span>
         </div>
         
-        {isHovered && !editingColumn && (
-          <DropdownMenu>
+        {(isHovered || dropdownOpen) && !editingColumn && (
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
@@ -198,14 +199,20 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem
-                onSelect={() => setEditingColumn(true)}
+                onSelect={() => {
+                  setEditingColumn(true);
+                  setDropdownOpen(false);
+                }}
               >
                 <Edit3 className="h-4 w-4 mr-2" />
                 Edit Column
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onSelect={() => setDeleteDialogOpen(true)}
+                onSelect={() => {
+                  setDeleteDialogOpen(true);
+                  setDropdownOpen(false);
+                }}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Column

@@ -13,6 +13,7 @@ import { Clock, User, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
 
 interface Item {
   id: string;
+  item_id: number;
   name: string;
   description: string | null;
   estimated_time: number | null;
@@ -126,7 +127,12 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
         >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
-          <h4 className="font-medium text-sm flex-1 pr-2">{item.name}</h4>
+          <div className="flex items-center gap-2 flex-1 pr-2">
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5 font-mono flex-shrink-0">
+              #{item.item_id}
+            </Badge>
+            <h4 className="font-medium text-sm truncate">{item.name}</h4>
+          </div>
           {(isHovered || dropdownOpen) && (
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
               <DropdownMenuTrigger asChild>
@@ -268,7 +274,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="h-[85vh] max-h-[900px] max-w-6xl overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
-            <DialogTitle>Edit Item</DialogTitle>
+            <DialogTitle>Edit Item #{item.item_id}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden min-h-0">
             <ItemDialogV3

@@ -31,6 +31,7 @@ interface Column {
 
 interface Item {
   id: string;
+  item_id: number;
   name: string;
   description: string | null;
   estimated_time: number | null;

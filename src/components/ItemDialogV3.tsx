@@ -22,6 +22,7 @@ import {
 
 interface Item {
   id: string;
+  item_id: number;
   name: string;
   description: string | null;
   estimated_time: number | null;
@@ -461,6 +462,18 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
           ? itemsInColumn[0].position + 1 
           : 0;
 
+        // Get next item_id for this project
+        const { data: maxItemId } = await supabase
+          .from('items')
+          .select('item_id')
+          .eq('project_id', projectId)
+          .order('item_id', { ascending: false })
+          .limit(1);
+
+        const nextItemId = maxItemId && maxItemId.length > 0 
+          ? maxItemId[0].item_id + 1 
+          : 1;
+
         const { data: newItem, error: createError } = await supabase
           .from('items')
           .insert({
@@ -471,6 +484,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
             column_id: selectedColumnId,
             project_id: projectId,
             position: nextPosition,
+            item_id: nextItemId,
           })
           .select()
           .single();

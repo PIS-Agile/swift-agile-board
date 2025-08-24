@@ -12,11 +12,12 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
 import { CustomFieldsDialog } from '@/components/CustomFieldsDialog';
 import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
+import { FilterDialog, FilterCriteria } from '@/components/FilterDialog';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Menu, Settings2, FileText } from 'lucide-react';
+import { Plus, Menu, Settings2, FileText, Filter } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface Column {
@@ -81,6 +82,9 @@ const Index = () => {
   const [newColumnColor, setNewColumnColor] = useState('#6366f1');
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
   const [defaultValuesDialogOpen, setDefaultValuesDialogOpen] = useState(false);
+  const [filterDialogOpen, setFilterDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterCriteria>({});
+  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -253,6 +257,11 @@ const Index = () => {
     }
   }, [user, selectedProjectId, fetchData]);
 
+  // Apply filters whenever items or filters change
+  useEffect(() => {
+    applyFilters();
+  }, [items, filters]);
+
   const handleCreateColumn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newColumnName.trim()) return;
@@ -314,6 +323,136 @@ const Index = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...items];
+
+    // Filter by name
+    if (filters.name) {
+      filtered = filtered.filter(item => 
+        item.name.toLowerCase().includes(filters.name!.toLowerCase())
+      );
+    }
+
+    // Filter by description
+    if (filters.description) {
+      filtered = filtered.filter(item => 
+        item.description?.toLowerCase().includes(filters.description!.toLowerCase())
+      );
+    }
+
+    // Filter by estimated time
+    if (filters.estimatedTimeMin !== null && filters.estimatedTimeMin !== undefined) {
+      filtered = filtered.filter(item => 
+        item.estimated_time !== null && item.estimated_time >= filters.estimatedTimeMin!
+      );
+    }
+    if (filters.estimatedTimeMax !== null && filters.estimatedTimeMax !== undefined) {
+      filtered = filtered.filter(item => 
+        item.estimated_time !== null && item.estimated_time <= filters.estimatedTimeMax!
+      );
+    }
+
+    // Filter by actual time
+    if (filters.actualTimeMin !== null && filters.actualTimeMin !== undefined) {
+      filtered = filtered.filter(item => 
+        item.actual_time >= filters.actualTimeMin!
+      );
+    }
+    if (filters.actualTimeMax !== null && filters.actualTimeMax !== undefined) {
+      filtered = filtered.filter(item => 
+        item.actual_time <= filters.actualTimeMax!
+      );
+    }
+
+    // Filter by assigned users
+    if (filters.assignedUsers && filters.assignedUsers.length > 0) {
+      filtered = filtered.filter(item => {
+        const assignedUserIds = item.assignments.map(a => a.user_id);
+        return filters.assignedUsers!.some(userId => assignedUserIds.includes(userId));
+      });
+    }
+
+    // Filter by columns
+    if (filters.columns && filters.columns.length > 0) {
+      filtered = filtered.filter(item => 
+        filters.columns!.includes(item.column_id)
+      );
+    }
+
+    // Filter by custom fields
+    if (filters.customFields) {
+      Object.entries(filters.customFields).forEach(([fieldKey, filterValue]) => {
+        if (filterValue === null || filterValue === undefined || filterValue === '' || 
+            (Array.isArray(filterValue) && filterValue.length === 0)) {
+          return;
+        }
+
+        // Handle different filter types
+        if (fieldKey.endsWith('_min') || fieldKey.endsWith('_max')) {
+          // Number range filters
+          const fieldId = fieldKey.replace(/_min$|_max$/, '');
+          const isMin = fieldKey.endsWith('_min');
+          
+          filtered = filtered.filter(item => {
+            const fieldValue = item.custom_field_values?.find(v => v.field_id === fieldId)?.value;
+            if (fieldValue === null || fieldValue === undefined) return false;
+            
+            if (isMin) {
+              return parseFloat(fieldValue) >= filterValue;
+            } else {
+              return parseFloat(fieldValue) <= filterValue;
+            }
+          });
+        } else if (fieldKey.endsWith('_start') || fieldKey.endsWith('_end')) {
+          // Date range filters
+          const fieldId = fieldKey.replace(/_start$|_end$/, '');
+          const isStart = fieldKey.endsWith('_start');
+          
+          filtered = filtered.filter(item => {
+            const fieldValue = item.custom_field_values?.find(v => v.field_id === fieldId)?.value;
+            if (!fieldValue) return false;
+            
+            const fieldDate = new Date(fieldValue);
+            const filterDate = new Date(filterValue as string);
+            
+            if (isStart) {
+              return fieldDate >= filterDate;
+            } else {
+              return fieldDate <= filterDate;
+            }
+          });
+        } else if (typeof filterValue === 'string') {
+          // Text search
+          filtered = filtered.filter(item => {
+            const fieldValue = item.custom_field_values?.find(v => v.field_id === fieldKey)?.value;
+            if (!fieldValue) return false;
+            return String(fieldValue).toLowerCase().includes(filterValue.toLowerCase());
+          });
+        } else if (Array.isArray(filterValue)) {
+          // Multi-select filters
+          filtered = filtered.filter(item => {
+            const fieldValue = item.custom_field_values?.find(v => v.field_id === fieldKey)?.value;
+            if (!fieldValue) return false;
+            
+            if (Array.isArray(fieldValue)) {
+              // Check if any selected filter values are in the field value
+              return filterValue.some(fv => fieldValue.includes(fv));
+            } else {
+              // Single value, check if it's in the filter values
+              return filterValue.includes(fieldValue);
+            }
+          });
+        }
+      });
+    }
+
+    setFilteredItems(filtered);
+  };
+
+  const handleApplyFilters = (newFilters: FilterCriteria) => {
+    setFilters(newFilters);
   };
 
   const handleColumnReorder = async (draggedColumnId: string, targetColumnId: string) => {
@@ -412,6 +551,38 @@ const Index = () => {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
+                      variant={Object.keys(filters).some(key => 
+                        filters[key as keyof FilterCriteria] !== undefined && 
+                        filters[key as keyof FilterCriteria] !== null && 
+                        (Array.isArray(filters[key as keyof FilterCriteria]) ? 
+                          (filters[key as keyof FilterCriteria] as any[]).length > 0 : 
+                          filters[key as keyof FilterCriteria] !== '')
+                      ) ? 'default' : 'outline'}
+                      onClick={() => setFilterDialogOpen(true)}
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter
+                      {Object.keys(filters).some(key => 
+                        filters[key as keyof FilterCriteria] !== undefined && 
+                        filters[key as keyof FilterCriteria] !== null && 
+                        (Array.isArray(filters[key as keyof FilterCriteria]) ? 
+                          (filters[key as keyof FilterCriteria] as any[]).length > 0 : 
+                          filters[key as keyof FilterCriteria] !== '')
+                      ) && (
+                        <span className="ml-1 bg-background text-foreground rounded-full px-1.5 py-0.5 text-xs">
+                          {Object.keys(filters).filter(key => 
+                            filters[key as keyof FilterCriteria] !== undefined && 
+                            filters[key as keyof FilterCriteria] !== null && 
+                            (Array.isArray(filters[key as keyof FilterCriteria]) ? 
+                              (filters[key as keyof FilterCriteria] as any[]).length > 0 : 
+                              filters[key as keyof FilterCriteria] !== '')
+                          ).length}
+                        </span>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => setDefaultValuesDialogOpen(true)}
                     >
@@ -494,7 +665,7 @@ const Index = () => {
                     <KanbanColumn
                       key={column.id}
                       column={column}
-                      items={items.filter(item => item.column_id === column.id)}
+                      items={filteredItems.filter(item => item.column_id === column.id)}
                       profiles={profiles}
                       projectId={selectedProjectId}
                       onItemUpdate={handleItemUpdate}
@@ -538,6 +709,15 @@ const Index = () => {
           projectId={selectedProjectId}
           open={defaultValuesDialogOpen}
           onOpenChange={setDefaultValuesDialogOpen}
+        />
+        
+        <FilterDialog
+          projectId={selectedProjectId}
+          open={filterDialogOpen}
+          onOpenChange={setFilterDialogOpen}
+          onApplyFilters={handleApplyFilters}
+          currentFilters={filters}
+          columns={columns}
         />
       </SidebarProvider>
     </DndProvider>

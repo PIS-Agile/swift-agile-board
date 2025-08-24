@@ -90,6 +90,7 @@ const Index = () => {
   
   // Track if this is the initial load
   const isInitialLoadRef = useRef(true);
+  const previousProjectIdRef = useRef(selectedProjectId);
   
   // Use ref to track dialog states for loading prevention
   const dialogStatesRef = useRef({
@@ -281,16 +282,22 @@ const Index = () => {
         dialogStatesRef.current.editingItem ||
         dialogStatesRef.current.newColumn;
       
-      // Always show loading on initial load, but not when dialogs are open
-      if (isInitialLoadRef.current || !hasOpenDialogs) {
+      // Check if we're switching projects
+      const isProjectSwitch = previousProjectIdRef.current !== selectedProjectId;
+      previousProjectIdRef.current = selectedProjectId;
+      
+      // Only show loading on initial load or project switch, and only when no dialogs are open
+      if ((isInitialLoadRef.current || isProjectSwitch) && !hasOpenDialogs) {
         setLoading(true);
         fetchData().finally(() => {
           setLoading(false);
           isInitialLoadRef.current = false;
         });
       } else {
-        // Still fetch data but don't show loading screen
-        fetchData();
+        // Don't show loading screen if dialogs are open or it's just a refresh
+        fetchData().finally(() => {
+          isInitialLoadRef.current = false;
+        });
       }
     }
   }, [user, selectedProjectId, fetchData]);

@@ -225,7 +225,10 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 
                 // Format value based on field type
                 if (fieldType === 'date') {
-                  displayValue = new Date(value).toLocaleDateString('en-GB'); // DD/MM/YYYY format
+                  // Parse date string without timezone conversion
+                  // value is in format "YYYY-MM-DD"
+                  const [year, month, day] = value.split('-').map(Number);
+                  displayValue = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`; // DD/MM/YYYY format
                 } else if (fieldType === 'user_select') {
                   const user = profiles.find(p => p.id === value);
                   displayValue = user ? (user.full_name || user.email || 'Unknown') : null;

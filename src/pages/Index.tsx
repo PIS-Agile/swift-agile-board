@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { DragProvider } from '@/contexts/DragContext';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -521,8 +522,9 @@ const Index = () => {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <SidebarProvider>
+    <DragProvider>
+      <DndProvider backend={HTML5Backend}>
+        <SidebarProvider>
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar 
             selectedProjectId={selectedProjectId}
@@ -709,8 +711,9 @@ const Index = () => {
           open={defaultValuesDialogOpen}
           onOpenChange={setDefaultValuesDialogOpen}
         />
-      </SidebarProvider>
-    </DndProvider>
+        </SidebarProvider>
+      </DndProvider>
+    </DragProvider>
   );
 };
 

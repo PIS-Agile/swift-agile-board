@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
+import { useDragContext } from '@/contexts/DragContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +57,7 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ column, items, profiles, projectId, columns, onItemUpdate, onColumnUpdate, onColumnReorder }: KanbanColumnProps) {
+  const { isDragging: isDraggingGlobal } = useDragContext();
   const [isHovered, setIsHovered] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
@@ -68,6 +70,26 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<HTMLDivElement>(null);
+
+
+  // Enable scroll during drag
+  useEffect(() => {
+    if (!itemsRef.current) return;
+    
+    const handleWheel = (e: WheelEvent) => {
+      if (isDraggingGlobal && itemsRef.current) {
+        e.preventDefault();
+        itemsRef.current.scrollTop += e.deltaY;
+      }
+    };
+    
+    const element = itemsRef.current;
+    element.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      element.removeEventListener('wheel', handleWheel);
+    };
+  }, [isDraggingGlobal]);
 
   // Drag source for column
   const [{ isDragging }, dragRef] = useDrag({
@@ -389,12 +411,7 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
       <div 
         ref={itemsRef}
         className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 no-scrollbar"
-        onWheel={(e) => {
-          // Enable scrolling even during drag
-          if (itemsRef.current) {
-            itemsRef.current.scrollTop += e.deltaY;
-          }
-        }}
+        style={{ pointerEvents: isDraggingGlobal ? 'auto' : undefined }}
       >
         {items
           .sort((a, b) => a.position - b.position)

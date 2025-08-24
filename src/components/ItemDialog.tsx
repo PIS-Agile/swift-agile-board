@@ -35,7 +35,7 @@ interface Profile {
 interface CustomField {
   id: string;
   name: string;
-  field_type: 'text' | 'number' | 'date' | 'select' | 'multiselect';
+  field_type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'user_select' | 'user_multiselect';
   options?: string[];
 }
 
@@ -424,6 +424,100 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
                     ))}
                   </SelectContent>
                 </Select>
+              )}
+              
+              {field.field_type === 'user_select' && (
+                <Select
+                  value={customFieldValues[field.id] || ''}
+                  onValueChange={(value) => setCustomFieldValues(prev => ({
+                    ...prev,
+                    [field.id]: value
+                  }))}
+                >
+                  <SelectTrigger id={`custom-${field.id}`}>
+                    <SelectValue placeholder={`Select user`}>
+                      {customFieldValues[field.id] && 
+                        getDisplayName(profiles.find(p => p.id === customFieldValues[field.id]) || { id: '', full_name: null, email: null })
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {getDisplayName(profile)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {field.field_type === 'user_multiselect' && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {(customFieldValues[field.id] || []).map((userId: string) => {
+                      const user = profiles.find(p => p.id === userId);
+                      if (!user) return null;
+                      return (
+                        <Badge key={userId} variant="secondary" className="pr-1">
+                          {getDisplayName(user)}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-0 ml-2 hover:bg-transparent"
+                            onClick={() => {
+                              const currentValues = customFieldValues[field.id] || [];
+                              setCustomFieldValues(prev => ({
+                                ...prev,
+                                [field.id]: currentValues.filter((id: string) => id !== userId)
+                              }));
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Add user
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search users..." />
+                        <CommandList>
+                          <CommandEmpty>No users found.</CommandEmpty>
+                          <CommandGroup>
+                            {profiles
+                              .filter(profile => !(customFieldValues[field.id] || []).includes(profile.id))
+                              .map((profile) => (
+                                <CommandItem
+                                  key={profile.id}
+                                  onSelect={() => {
+                                    const currentValues = customFieldValues[field.id] || [];
+                                    setCustomFieldValues(prev => ({
+                                      ...prev,
+                                      [field.id]: [...currentValues, profile.id]
+                                    }));
+                                  }}
+                                >
+                                  {getDisplayName(profile)}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               )}
               
               {field.field_type === 'multiselect' && field.options && (

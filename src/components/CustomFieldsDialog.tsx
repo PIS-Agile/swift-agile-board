@@ -11,7 +11,7 @@ import { Plus, X, Settings2 } from 'lucide-react';
 interface CustomField {
   id: string;
   name: string;
-  field_type: 'text' | 'number' | 'date' | 'select' | 'multiselect';
+  field_type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'user_select' | 'user_multiselect';
   options?: string[];
   project_id: string;
 }
@@ -162,6 +162,8 @@ export function CustomFieldsDialog({ projectId, open, onOpenChange }: CustomFiel
                     <SelectItem value="date">Date</SelectItem>
                     <SelectItem value="select">Select (Single)</SelectItem>
                     <SelectItem value="multiselect">Select (Multiple)</SelectItem>
+                    <SelectItem value="user_select">User (Single)</SelectItem>
+                    <SelectItem value="user_multiselect">User (Multiple)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

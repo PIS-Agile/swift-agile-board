@@ -131,7 +131,7 @@ function DraggableField({
                     <textarea
                       value={field.tempOptions}
                       onChange={(e) => onOptionsChange(field.id, e.target.value)}
-                      className="w-full min-h-[80px] p-2 text-sm border rounded-md"
+                      className="w-full min-h-[80px] p-2 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                       placeholder="Option 1&#10;Option 2&#10;Option 3"
                     />
                   </div>
@@ -585,7 +585,7 @@ export function CustomFieldsDialogV2({ projectId, open, onOpenChange }: CustomFi
                       <textarea
                         value={newFieldOptions}
                         onChange={(e) => setNewFieldOptions(e.target.value)}
-                        className="w-full min-h-[80px] p-2 text-sm border rounded-md"
+                        className="w-full min-h-[80px] p-2 text-sm border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                         placeholder="Option 1&#10;Option 2&#10;Option 3"
                       />
                     </div>

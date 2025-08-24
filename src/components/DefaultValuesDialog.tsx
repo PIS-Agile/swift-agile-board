@@ -241,20 +241,20 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
       case 'select':
         return (
           <Select
-            value={value}
+            value={value || 'no-default'}
             onValueChange={(newValue) => setCustomFieldDefaults({
               ...customFieldDefaults,
-              [field.id]: newValue
+              [field.id]: newValue === 'no-default' ? '' : newValue
             })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select default option" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No default</SelectItem>
+              <SelectItem value="no-default">No default</SelectItem>
               {field.options?.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+                <SelectItem key={option} value={option || 'empty-option'}>
+                  {option || '(empty)'}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -289,17 +289,17 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
       case 'user_select':
         return (
           <Select
-            value={value}
+            value={value || 'no-default'}
             onValueChange={(newValue) => setCustomFieldDefaults({
               ...customFieldDefaults,
-              [field.id]: newValue
+              [field.id]: newValue === 'no-default' ? '' : newValue
             })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select default user" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No default</SelectItem>
+              <SelectItem value="no-default">No default</SelectItem>
               {profiles.map((profile) => (
                 <SelectItem key={profile.id} value={profile.id}>
                   {profile.full_name || profile.email || 'Unknown'}

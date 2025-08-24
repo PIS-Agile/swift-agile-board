@@ -15,7 +15,7 @@ import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
-import { useRealtimeWorking } from '@/hooks/useRealtimeWorking';
+import { useRealtimeWithReset } from '@/hooks/useRealtimeWithReset';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
@@ -229,8 +229,8 @@ const Index = () => {
     fetchItems();
   }, [fetchColumns, fetchItems]);
 
-  // Use the working realtime subscription hook
-  const { isConnected } = useRealtimeWorking({
+  // Use the realtime subscription hook with reset capability
+  const { isConnected, resetConnection } = useRealtimeWithReset({
     projectId: selectedProjectId,
     onDataChange: handleDataChange,
     enabled: !!user && !!selectedProjectId
@@ -527,6 +527,7 @@ const Index = () => {
           <AppSidebar 
             selectedProjectId={selectedProjectId}
             onProjectSelect={setSelectedProjectId}
+            onSyncClick={resetConnection}
           />
           
           <main className="flex-1 flex flex-col h-screen overflow-hidden">

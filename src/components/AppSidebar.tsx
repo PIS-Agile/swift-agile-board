@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Trello, Plus, FolderKanban, LogOut, User, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
+import { Trello, Plus, FolderKanban, LogOut, User, Edit3, Trash2, MoreHorizontal, RefreshCw } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -37,9 +37,10 @@ interface Profile {
 interface AppSidebarProps {
   selectedProjectId: string;
   onProjectSelect: (projectId: string) => void;
+  onSyncClick?: () => void;
 }
 
-export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarProps) {
+export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: AppSidebarProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -405,15 +406,27 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
               </div>
             </div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSignOut}
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" />
-            {!isCollapsed && <span>Sign Out</span>}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onSyncClick}
+              className="flex-1 justify-start text-muted-foreground hover:text-foreground"
+              title="Reset realtime connection"
+            >
+              <RefreshCw className="h-4 w-4" />
+              {!isCollapsed && <span>Sync</span>}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="flex-1 justify-start text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              {!isCollapsed && <span>Sign Out</span>}
+            </Button>
+          </div>
         </div>
       </SidebarFooter>
 

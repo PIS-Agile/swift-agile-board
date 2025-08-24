@@ -186,7 +186,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
   return (
     <div
       ref={combinedRef}
-      className={`kanban-column p-4 w-80 flex-shrink-0 transition-all ${
+      className={`kanban-column p-4 w-80 flex-shrink-0 transition-all relative ${
         isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
       } ${
         isOver ? 'ring-2 ring-primary ring-opacity-50' : ''
@@ -196,10 +196,14 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="flex items-center justify-between mb-4">
+      {/* Column drop indicator */}
+      {isOverColumn && !isDragging && (
+        <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none animate-pulse" />
+      )}
+      <div className={`flex items-center justify-between mb-4 ${isDragging ? 'cursor-grabbing' : ''}`}>
         <div className="flex items-center gap-2 flex-1">
           <div
-            className="w-3 h-3 rounded-full"
+            className="w-3 h-3 rounded-full transition-transform"
             style={{ backgroundColor: column.color }}
           />
           {editingColumn ? (

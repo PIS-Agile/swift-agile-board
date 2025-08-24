@@ -94,11 +94,17 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
   return (
     <Card
       ref={drag}
-      className={`kanban-item cursor-grab ${
-        isDragging ? 'opacity-50 kanban-item-dragging' : ''
+      className={`kanban-item cursor-pointer ${
+        isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={(e) => {
+        // Don't open edit dialog if clicking on dropdown button or if dragging
+        if (!isDragging && !(e.target as HTMLElement).closest('button')) {
+          setEditDialogOpen(true);
+        }
+      }}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">

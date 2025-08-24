@@ -103,7 +103,8 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
     // Don't open edit dialog if clicking on dropdown button, if dragging, or if dialog is already open
     if (!isDragging && !editDialogOpen && !deleteDialogOpen && !(e.target as HTMLElement).closest('button')) {
       e.stopPropagation();
-      setEditDialogOpen(true);
+      // Small delay to prevent reopening when dialog is closing
+      setTimeout(() => setEditDialogOpen(true), 0);
     }
   };
 
@@ -194,6 +195,46 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
                   </Badge>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Custom Fields Preview */}
+          {item.custom_field_values && item.custom_field_values.length > 0 && (
+            <div className="space-y-1 pt-1 border-t">
+              {item.custom_field_values.slice(0, 3).map((fieldValue) => {
+                const value = fieldValue.value;
+                if (!value || value === '') return null;
+                
+                let displayValue: any = value;
+                const fieldType = fieldValue.custom_fields.field_type;
+                
+                // Format value based on field type
+                if (fieldType === 'date') {
+                  displayValue = new Date(value).toLocaleDateString();
+                } else if (fieldType === 'user_select') {
+                  const user = profiles.find(p => p.id === value);
+                  displayValue = user ? (user.full_name || user.email || 'Unknown') : value;
+                } else if (fieldType === 'user_multiselect' && Array.isArray(value)) {
+                  displayValue = value.map(userId => {
+                    const user = profiles.find(p => p.id === userId);
+                    return user ? (user.full_name || user.email || 'Unknown') : userId;
+                  }).join(', ');
+                } else if (Array.isArray(value)) {
+                  displayValue = value.join(', ');
+                }
+                
+                return (
+                  <div key={fieldValue.field_id} className="text-xs text-muted-foreground">
+                    <span className="font-medium">{fieldValue.custom_fields.name}:</span>{' '}
+                    <span>{displayValue}</span>
+                  </div>
+                );
+              }).filter(Boolean)}
+              {item.custom_field_values.filter(fv => fv.value && fv.value !== '').length > 3 && (
+                <div className="text-xs text-muted-foreground">
+                  +{item.custom_field_values.filter(fv => fv.value && fv.value !== '').length - 3} more fields
+                </div>
+              )}
             </div>
           )}
         </div>

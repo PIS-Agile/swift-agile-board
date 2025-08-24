@@ -8,7 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save } from 'lucide-react';
+import { Save, Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Undo, Redo } from 'lucide-react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import Underline from '@tiptap/extension-underline';
 
 interface Profile {
   id: string;
@@ -36,6 +40,133 @@ interface DefaultValuesDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Editor Toolbar Component
+function EditorToolbar({ editor }: { editor: any }) {
+  if (!editor) return null;
+
+  return (
+    <div className="border-b border-border bg-muted/30 p-2 flex items-center gap-1 flex-wrap">
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          data-active={editor.isActive('bold')}
+        >
+          <Bold className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          data-active={editor.isActive('italic')}
+        >
+          <Italic className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          data-active={editor.isActive('underline')}
+        >
+          <Underline className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="w-px h-6 bg-border mx-1" />
+      
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          data-active={editor.isActive('heading', { level: 1 })}
+        >
+          <Heading1 className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          data-active={editor.isActive('heading', { level: 2 })}
+        >
+          <Heading2 className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          data-active={editor.isActive('heading', { level: 3 })}
+        >
+          <Heading3 className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="w-px h-6 bg-border mx-1" />
+      
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          data-active={editor.isActive('bulletList')}
+        >
+          <List className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          data-active={editor.isActive('orderedList')}
+        >
+          <ListOrdered className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="w-px h-6 bg-border mx-1" />
+      
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().undo().run()}
+          disabled={!editor.can().undo()}
+        >
+          <Undo className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={() => editor.chain().focus().redo().run()}
+          disabled={!editor.can().redo()}
+        >
+          <Redo className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultValuesDialogProps) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
@@ -46,12 +177,40 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
   });
   const [customFieldDefaults, setCustomFieldDefaults] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  
+  // Initialize rich text editor for description
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+      }),
+      Underline,
+      Placeholder.configure({
+        placeholder: 'Enter default description...',
+      }),
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'ProseMirror',
+      },
+    },
+  });
 
   useEffect(() => {
     if (open) {
       fetchData();
     }
   }, [open, projectId]);
+  
+  // Update editor content when description changes
+  useEffect(() => {
+    if (editor && projectDefaults.description !== undefined) {
+      editor.commands.setContent(projectDefaults.description || '');
+    }
+  }, [editor, projectDefaults.description]);
 
   const fetchData = async () => {
     try {
@@ -125,8 +284,14 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
   const handleSaveBuiltInDefaults = async () => {
     setLoading(true);
     try {
+      // Get the current description from the editor
+      const updatedDefaults = {
+        ...projectDefaults,
+        description: editor?.getHTML() || ''
+      };
+      
       // Save each built-in field default
-      for (const [fieldName, defaultValue] of Object.entries(projectDefaults)) {
+      for (const [fieldName, defaultValue] of Object.entries(updatedDefaults)) {
         // Check if default exists
         const { data: existing } = await supabase
           .from('project_defaults')
@@ -359,16 +524,13 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
             <div className="space-y-4">
               <div>
                 <Label htmlFor="default-description">Description</Label>
-                <Textarea
-                  id="default-description"
-                  value={projectDefaults.description || ''}
-                  onChange={(e) => setProjectDefaults({
-                    ...projectDefaults,
-                    description: e.target.value
-                  })}
-                  placeholder="Enter default description"
-                  rows={3}
-                />
+                <div className="border rounded-md overflow-hidden">
+                  <EditorToolbar editor={editor} />
+                  <EditorContent 
+                    editor={editor} 
+                    className="min-h-[100px] max-h-[200px] overflow-y-auto p-3"
+                  />
+                </div>
               </div>
               
               <div>

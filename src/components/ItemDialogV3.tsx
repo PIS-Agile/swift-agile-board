@@ -268,7 +268,22 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         const defaults: Record<string, any> = {};
         fields.forEach(field => {
           if (field.default_value !== null && field.default_value !== undefined) {
-            defaults[field.id] = field.default_value;
+            // Validate user fields - ensure default users exist
+            if (field.field_type === 'user_select') {
+              const userExists = profiles.some(p => p.id === field.default_value);
+              if (userExists) {
+                defaults[field.id] = field.default_value;
+              }
+            } else if (field.field_type === 'user_multiselect' && Array.isArray(field.default_value)) {
+              const validUsers = field.default_value.filter(userId => 
+                profiles.some(p => p.id === userId)
+              );
+              if (validUsers.length > 0) {
+                defaults[field.id] = validUsers;
+              }
+            } else {
+              defaults[field.id] = field.default_value;
+            }
           }
         });
         setCustomFieldValues(prev => ({ ...defaults, ...prev }));
@@ -455,10 +470,24 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         for (const [fieldId, value] of Object.entries(customFieldValues)) {
           if (value !== null && value !== undefined && value !== '' && 
               (!Array.isArray(value) || value.length > 0)) {
+            
+            // Get field type
+            const field = customFields.find(f => f.id === fieldId);
+            let validatedValue = value;
+            
+            // Validate user fields before saving
+            if (field?.field_type === 'user_select' && typeof value === 'string') {
+              const userExists = profiles.some(p => p.id === value);
+              if (!userExists) continue; // Skip invalid user ID
+            } else if (field?.field_type === 'user_multiselect' && Array.isArray(value)) {
+              validatedValue = value.filter(userId => profiles.some(p => p.id === userId));
+              if (validatedValue.length === 0) continue; // Skip if no valid users
+            }
+            
             fieldValueInserts.push({
               item_id: newItem.id,
               field_id: fieldId,
-              value
+              value: validatedValue
             });
           }
         }

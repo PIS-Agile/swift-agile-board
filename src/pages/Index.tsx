@@ -85,6 +85,7 @@ const Index = () => {
   const [defaultValuesDialogOpen, setDefaultValuesDialogOpen] = useState(false);
   const [filters, setFilters] = useState<FilterCriteria>({});
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
+  const [isEditingItem, setIsEditingItem] = useState(false); // Track if any item dialog is open
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -254,8 +255,15 @@ const Index = () => {
 
   useEffect(() => {
     if (user && selectedProjectId) {
-      setLoading(true);
-      fetchData().finally(() => setLoading(false));
+      // Don't set loading if we're editing an item or have dialogs open
+      const hasOpenDialogs = customFieldsDialogOpen || defaultValuesDialogOpen || isEditingItem;
+      if (!hasOpenDialogs) {
+        setLoading(true);
+        fetchData().finally(() => setLoading(false));
+      } else {
+        // Still fetch data but don't show loading screen
+        fetchData();
+      }
     }
   }, [user, selectedProjectId, fetchData]);
 
@@ -672,6 +680,7 @@ const Index = () => {
                       onItemUpdate={handleItemUpdate}
                       onColumnUpdate={handleColumnUpdate}
                       onColumnReorder={handleColumnReorder}
+                      onItemDialogChange={setIsEditingItem}
                     />
                   ))}
                   

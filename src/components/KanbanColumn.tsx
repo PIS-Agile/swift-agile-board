@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import { useDragContext } from '@/contexts/DragContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,10 +53,10 @@ interface KanbanColumnProps {
   onItemUpdate: () => void;
   onColumnUpdate: () => void;
   onColumnReorder?: (draggedColumnId: string, targetColumnId: string) => void;
+  onItemDialogChange?: (isOpen: boolean) => void;
 }
 
-export function KanbanColumn({ column, items, profiles, projectId, columns, onItemUpdate, onColumnUpdate, onColumnReorder }: KanbanColumnProps) {
-  const { isDragging: isDraggingGlobal } = useDragContext();
+export function KanbanColumn({ column, items, profiles, projectId, columns, onItemUpdate, onColumnUpdate, onColumnReorder, onItemDialogChange }: KanbanColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
@@ -71,46 +70,83 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
   const dropRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<HTMLDivElement>(null);
 
-
-  // Enable scroll during drag - use a more robust approach
+  // Notify parent when item dialog opens/closes
   useEffect(() => {
-    if (!itemsRef.current) return;
+    onItemDialogChange?.(itemDialogOpen);
+  }, [itemDialogOpen, onItemDialogChange]);
+
+  // Auto-scroll when dragging near edges
+  useEffect(() => {
+    let scrollInterval: NodeJS.Timeout | null = null;
+    let currentElement: HTMLElement | null = null;
     
-    const handleWheel = (e: WheelEvent) => {
-      // Always allow scrolling in the items container
-      if (itemsRef.current && itemsRef.current.contains(e.target as Node)) {
-        // Don't prevent default, just scroll naturally
-        // But during drag, we may need to handle it differently
-        if (isDraggingGlobal) {
-          // Stop propagation to prevent conflicts with drag-and-drop
-          e.stopPropagation();
+    const handleDragOver = (e: DragEvent) => {
+      if (!itemsRef.current) return;
+      
+      const rect = itemsRef.current.getBoundingClientRect();
+      
+      // Check if mouse is over this column
+      if (e.clientX >= rect.left && e.clientX <= rect.right &&
+          e.clientY >= rect.top && e.clientY <= rect.bottom) {
+        
+        currentElement = itemsRef.current;
+        const scrollZone = 50; // pixels from edge to trigger scroll
+        const scrollSpeed = 5; // pixels per frame
+        
+        const relativeY = e.clientY - rect.top;
+        const containerHeight = rect.height;
+        
+        // Clear any existing scroll interval
+        if (scrollInterval) {
+          clearInterval(scrollInterval);
+          scrollInterval = null;
+        }
+        
+        // Auto-scroll up when near top
+        if (relativeY < scrollZone) {
+          scrollInterval = setInterval(() => {
+            if (currentElement) {
+              currentElement.scrollTop -= scrollSpeed;
+            }
+          }, 16); // ~60fps
+        }
+        // Auto-scroll down when near bottom
+        else if (relativeY > containerHeight - scrollZone) {
+          scrollInterval = setInterval(() => {
+            if (currentElement) {
+              currentElement.scrollTop += scrollSpeed;
+            }
+          }, 16);
+        }
+      } else {
+        // Clear scroll if mouse leaves column
+        if (scrollInterval) {
+          clearInterval(scrollInterval);
+          scrollInterval = null;
         }
       }
     };
     
-    // Use capturing phase to get events before react-dnd
-    const element = itemsRef.current;
-    element.addEventListener('wheel', handleWheel, { capture: true, passive: true });
-    
-    // Also add a global wheel handler during drag
-    const globalWheelHandler = (e: WheelEvent) => {
-      if (!isDraggingGlobal || !itemsRef.current) return;
-      
-      // Check if mouse is over this column's items area
-      const rect = itemsRef.current.getBoundingClientRect();
-      if (e.clientX >= rect.left && e.clientX <= rect.right &&
-          e.clientY >= rect.top && e.clientY <= rect.bottom) {
-        itemsRef.current.scrollTop += e.deltaY;
+    const handleDragEnd = () => {
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
       }
     };
     
-    document.addEventListener('wheel', globalWheelHandler, { capture: true });
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('dragend', handleDragEnd);
+    document.addEventListener('drop', handleDragEnd);
     
     return () => {
-      element.removeEventListener('wheel', handleWheel);
-      document.removeEventListener('wheel', globalWheelHandler);
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('dragend', handleDragEnd);
+      document.removeEventListener('drop', handleDragEnd);
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+      }
     };
-  }, [isDraggingGlobal]);
+  }, []);
 
   // Drag source for column
   const [{ isDragging }, dragRef] = useDrag({
@@ -432,20 +468,6 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
       <div 
         ref={itemsRef}
         className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 no-scrollbar"
-        style={{ 
-          // Ensure scrolling works during drag
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}
-        onWheel={(e) => {
-          // Handle wheel events directly on the container
-          if (isDraggingGlobal) {
-            // During drag, manually scroll without interfering with drag
-            const target = e.currentTarget;
-            target.scrollTop += e.deltaY;
-            // Don't stop propagation or prevent default
-          }
-        }}
       >
         {items
           .sort((a, b) => a.position - b.position)

@@ -15,7 +15,7 @@ import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscriptionFixed';
+import { useRealtimeSimple } from '@/hooks/useRealtimeSimple';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
@@ -222,33 +222,26 @@ const Index = () => {
     }
   }, [fetchColumns, fetchItems]);
 
-  // Memoize the callbacks to prevent unnecessary re-renders
-  const handleRealtimeItemsChange = useCallback(() => {
-    console.log('📦 Handling realtime items change');
-    fetchItems();
-  }, [fetchItems]);
-
-  const handleRealtimeColumnsChange = useCallback(() => {
-    console.log('📊 Handling realtime columns change');
+  // Simple callback for any data change
+  const handleDataChange = useCallback(() => {
+    console.log('🔄 Realtime data change detected, refreshing...');
     fetchColumns();
-    fetchItems(); // Also refresh items when columns change
+    fetchItems();
   }, [fetchColumns, fetchItems]);
 
-  // Use the new realtime subscription hook
-  const { isConnected } = useRealtimeSubscription({
+  // Use the simplified realtime subscription hook
+  useRealtimeSimple({
     projectId: selectedProjectId,
-    onItemsChange: handleRealtimeItemsChange,
-    onColumnsChange: handleRealtimeColumnsChange,
+    onDataChange: handleDataChange,
     enabled: !!user && !!selectedProjectId
   });
 
-  // Show connection status and add debug logging
+  // Show connection status
   useEffect(() => {
-    console.log('🔌 Realtime connection status:', isConnected ? 'Connected' : 'Disconnected');
-    if (isConnected) {
-      console.log('✅ Real-time is connected for project:', selectedProjectId);
+    if (user && selectedProjectId) {
+      console.log('✅ Real-time listening for project:', selectedProjectId);
     }
-  }, [isConnected, selectedProjectId]);
+  }, [user, selectedProjectId]);
   
   // Debug: Force refresh button (only in development)
   const forceRefresh = () => {
@@ -553,7 +546,7 @@ const Index = () => {
                   </div>
                   
                   <div className="flex items-center gap-4">
-                    <RealtimeStatus />
+                    <RealtimeStatus isConnected={true} />
                     
                     {process.env.NODE_ENV === 'development' && (
                       <Button

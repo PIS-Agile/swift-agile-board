@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Realtime Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            font-weight: bold;
+        }
+        .connected { background: #10b981; }
+        .error { background: #ef4444; }
+        .pending { background: #fbbf24; color: #000; }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px; 
+            cursor: pointer;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        .log { 
+            padding: 5px; 
+            margin: 2px 0; 
+            background: #262626; 
+            font-size: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simple Realtime Test</h1>
+    <div id="status" class="status pending">Connecting...</div>
+    
+    <div>
+        <button onclick="testInsert()">Test Insert</button>
+        <button onclick="testUpdate()">Test Update</button>
+        <button onclick="clearLogs()">Clear</button>
+    </div>
+    
+    <h3>Events:</h3>
+    <div id="logs"></div>
+
+    <script>
+        const SUPABASE_URL = "https://loshvtjahbhenrfgpvge.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxvc2h2dGphaGJoZW5yZmdwdmdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5ODcxNjMsImV4cCI6MjA3MTU2MzE2M30.cFR1LAnH9wwYeWDstl2rSXBSeJUu7fiMqbwlvUV8ySk";
+
+        const { createClient } = supabase;
+        const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        const statusDiv = document.getElementById('status');
+        const logsDiv = document.getElementById('logs');
+        let testColumnId = null;
+        let testItemId = null;
+
+        function log(msg) {
+            const div = document.createElement('div');
+            div.className = 'log';
+            div.textContent = new Date().toLocaleTimeString() + ': ' + msg;
+            logsDiv.insertBefore(div, logsDiv.firstChild);
+            console.log(msg);
+        }
+
+        function clearLogs() {
+            logsDiv.innerHTML = '';
+        }
+
+        // Get test data
+        async function init() {
+            const { data: cols } = await client
+                .from('columns')
+                .select('id, name')
+                .limit(1);
+            
+            if (cols && cols[0]) {
+                testColumnId = cols[0].id;
+                log('Using column: ' + cols[0].name);
+            }
+
+            const { data: items } = await client
+                .from('items')
+                .select('id, name')
+                .limit(1);
+            
+            if (items && items[0]) {
+                testItemId = items[0].id;
+                log('Found item: ' + items[0].name);
+            }
+        }
+
+        // Setup realtime
+        const channel = client
+            .channel('test-channel')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'items' },
+                (payload) => {
+                    log('📦 ITEM ' + payload.eventType + ': ' + (payload.new?.name || payload.old?.name || 'unknown'));
+                }
+            )
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'columns' },
+                (payload) => {
+                    log('📊 COLUMN ' + payload.eventType + ': ' + (payload.new?.name || payload.old?.name || 'unknown'));
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    statusDiv.textContent = '✅ CONNECTED';
+                    statusDiv.className = 'status connected';
+                    log('Connected to realtime!');
+                } else if (status === 'CHANNEL_ERROR') {
+                    statusDiv.textContent = '❌ ERROR';
+                    statusDiv.className = 'status error';
+                    log('Connection error!');
+                } else {
+                    statusDiv.textContent = status;
+                    statusDiv.className = 'status pending';
+                }
+            });
+
+        async function testInsert() {
+            if (!testColumnId) {
+                log('No column available');
+                return;
+            }
+
+            const name = 'Test ' + Date.now();
+            log('Inserting: ' + name);
+            
+            const { data, error } = await client
+                .from('items')
+                .insert({
+                    name: name,
+                    column_id: testColumnId,
+                    position: 999,
+                    actual_time: 0
+                })
+                .select()
+                .single();
+            
+            if (error) {
+                log('ERROR: ' + error.message);
+            } else {
+                log('Inserted ID: ' + data.id);
+                testItemId = data.id;
+            }
+        }
+
+        async function testUpdate() {
+            if (!testItemId) {
+                log('No item available');
+                return;
+            }
+
+            const name = 'Updated ' + Date.now();
+            log('Updating to: ' + name);
+            
+            const { error } = await client
+                .from('items')
+                .update({ name: name })
+                .eq('id', testItemId);
+            
+            if (error) {
+                log('ERROR: ' + error.message);
+            } else {
+                log('Updated successfully');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

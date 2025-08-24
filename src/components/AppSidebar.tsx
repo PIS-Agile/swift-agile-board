@@ -19,7 +19,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { Trello, Plus, FolderKanban, LogOut, User } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Trello, Plus, FolderKanban, LogOut, User, MoreHorizontal, Edit3, Trash2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -45,6 +47,11 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editProjectName, setEditProjectName] = useState('');
+  const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
   const { state } = useSidebar();
   const navigate = useNavigate();
 
@@ -53,6 +60,26 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
   useEffect(() => {
     fetchProjects();
     fetchProfile();
+
+    // Set up real-time subscription for projects
+    const projectsChannel = supabase
+      .channel('projects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects'
+        },
+        () => {
+          fetchProjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(projectsChannel);
+    };
   }, []);
 
   const fetchProjects = async () => {
@@ -91,6 +118,77 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
     } catch (error: any) {
       console.error('Error fetching profile:', error);
     }
+  };
+
+  const handleEditProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editProjectName.trim() || !editingProject) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .update({
+          name: editProjectName.trim(),
+          description: editProjectDescription.trim() || null,
+        })
+        .eq('id', editingProject.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setProjects(projects.map(p => p.id === editingProject.id ? data : p));
+      setEditDialogOpen(false);
+      setEditingProject(null);
+      
+      toast({
+        title: "Project updated",
+        description: `${data.name} has been updated successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating project",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setProjects(projects.filter(p => p.id !== projectId));
+      if (selectedProjectId === projectId) {
+        const remainingProjects = projects.filter(p => p.id !== projectId);
+        if (remainingProjects.length > 0) {
+          onProjectSelect(remainingProjects[0].id);
+        }
+      }
+      
+      toast({
+        title: "Project deleted",
+        description: "Project and all its data have been deleted.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error deleting project",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startEditProject = (project: Project) => {
+    setEditingProject(project);
+    setEditProjectName(project.name);
+    setEditProjectDescription(project.description || '');
+    setEditDialogOpen(true);
   };
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -180,15 +278,65 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
           <SidebarGroupContent>
             <SidebarMenu>
               {projects.map((project) => (
-                <SidebarMenuItem key={project.id}>
-                  <SidebarMenuButton
-                    onClick={() => onProjectSelect(project.id)}
-                    isActive={selectedProjectId === project.id}
-                    className="justify-start"
-                  >
-                    <FolderKanban className="h-4 w-4" />
-                    {!isCollapsed && <span>{project.name}</span>}
-                  </SidebarMenuButton>
+                <SidebarMenuItem 
+                  key={project.id}
+                  onMouseEnter={() => setHoveredProjectId(project.id)}
+                  onMouseLeave={() => setHoveredProjectId(null)}
+                >
+                  <div className="flex items-center w-full">
+                    <SidebarMenuButton
+                      onClick={() => onProjectSelect(project.id)}
+                      isActive={selectedProjectId === project.id}
+                      className="justify-start flex-1"
+                    >
+                      <FolderKanban className="h-4 w-4" />
+                      {!isCollapsed && <span>{project.name}</span>}
+                    </SidebarMenuButton>
+                    {!isCollapsed && hoveredProjectId === project.id && project.id !== '00000000-0000-0000-0000-000000000001' && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => startEditProject(project)}>
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Edit Project
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => document.getElementById(`delete-project-trigger-${project.id}`)?.click()}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Project
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button id={`delete-project-trigger-${project.id}`} className="hidden" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete "{project.name}"? This will permanently delete all columns and items in this project. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={() => handleDeleteProject(project.id)} 
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </SidebarMenuItem>
               ))}
               
@@ -270,6 +418,46 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
           </Button>
         </div>
       </SidebarFooter>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditProject} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-project-name">Project Name</Label>
+              <Input
+                id="edit-project-name"
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
+                placeholder="Enter project name"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-project-description">Description (optional)</Label>
+              <Textarea
+                id="edit-project-description"
+                value={editProjectDescription}
+                onChange={(e) => setEditProjectDescription(e.target.value)}
+                placeholder="Describe your project"
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit">Update Project</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Sidebar>
   );
 }

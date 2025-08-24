@@ -195,31 +195,13 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
                 <Edit3 className="h-4 w-4 mr-2" />
                 Edit Column
               </DropdownMenuItem>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <DropdownMenuItem
-                    onSelect={(e) => e.preventDefault()}
-                    className="text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete Column
-                  </DropdownMenuItem>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Column</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{column.name}"? This will also delete all items in this column. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteColumn} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => document.getElementById(`delete-column-trigger-${column.id}`)?.click()}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Column
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -261,6 +243,26 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button id={`delete-column-trigger-${column.id}`} className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Column</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{column.name}"? This will also delete all items in this column. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteColumn} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

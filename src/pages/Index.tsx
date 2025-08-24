@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
+import { CustomFieldsDialog } from '@/components/CustomFieldsDialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Menu } from 'lucide-react';
+import { Plus, Menu, Settings2 } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface Column {
@@ -65,6 +66,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [newColumnDialogOpen, setNewColumnDialogOpen] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
+  const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -99,6 +101,67 @@ const Index = () => {
     if (user) {
       fetchData();
     }
+  }, [user, selectedProjectId]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user || !selectedProjectId) return;
+
+    // Subscribe to items changes
+    const itemsChannel = supabase
+      .channel('items-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'items',
+          filter: `project_id=eq.${selectedProjectId}`
+        },
+        () => {
+          fetchItems();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to columns changes
+    const columnsChannel = supabase
+      .channel('columns-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'columns',
+          filter: `project_id=eq.${selectedProjectId}`
+        },
+        () => {
+          fetchColumns();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to item_assignments changes
+    const assignmentsChannel = supabase
+      .channel('assignments-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'item_assignments'
+        },
+        () => {
+          fetchItems();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(itemsChannel);
+      supabase.removeChannel(columnsChannel);
+      supabase.removeChannel(assignmentsChannel);
+    };
   }, [user, selectedProjectId]);
 
   const fetchData = async () => {
@@ -256,7 +319,17 @@ const Index = () => {
                   </div>
                 </div>
                 
-                <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCustomFieldsDialogOpen(true)}
+                  >
+                    <Settings2 className="h-4 w-4 mr-2" />
+                    Custom Fields
+                  </Button>
+                  
+                  <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm">
                       <Plus className="h-4 w-4 mr-2" />
@@ -291,6 +364,7 @@ const Index = () => {
                     </form>
                   </DialogContent>
                 </Dialog>
+                </div>
               </div>
             </header>
 
@@ -332,6 +406,12 @@ const Index = () => {
             </div>
           </main>
         </div>
+
+        <CustomFieldsDialog
+          projectId={selectedProjectId}
+          open={customFieldsDialogOpen}
+          onOpenChange={setCustomFieldsDialogOpen}
+        />
       </SidebarProvider>
     </DndProvider>
   );

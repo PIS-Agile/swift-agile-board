@@ -112,31 +112,13 @@ export function KanbanItem({ item, columnId, profiles, onUpdate }: KanbanItemPro
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit Item
                 </DropdownMenuItem>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      onSelect={(e) => e.preventDefault()}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Item
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Item</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete "{item.name}"? This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => document.getElementById(`delete-item-trigger-${item.id}`)?.click()}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Item
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -202,6 +184,26 @@ export function KanbanItem({ item, columnId, profiles, onUpdate }: KanbanItemPro
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <button id={`delete-item-trigger-${item.id}`} className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{item.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

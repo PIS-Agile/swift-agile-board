@@ -158,11 +158,7 @@ const Index = () => {
           }, 100);
         }
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Real-time subscription active for project:', selectedProjectId);
-        }
-      });
+      .subscribe();
 
     return () => {
       mounted = false;
@@ -337,7 +333,6 @@ const Index = () => {
     try {
       await fetchItems();
     } catch (error: any) {
-      console.error('Error updating items:', error);
       toast({
         title: "Error updating items",
         description: error.message,
@@ -351,7 +346,6 @@ const Index = () => {
       await fetchColumns();
       await fetchItems(); // Refresh items too in case column was deleted
     } catch (error: any) {
-      console.error('Error updating columns:', error);
       toast({
         title: "Error updating columns",
         description: error.message,

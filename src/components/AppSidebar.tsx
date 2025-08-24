@@ -51,7 +51,6 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDescription, setEditProjectDescription] = useState('');
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
-  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const { state } = useSidebar();
   const navigate = useNavigate();
 
@@ -293,25 +292,15 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                       {!isCollapsed && <span>{project.name}</span>}
                     </SidebarMenuButton>
                     {!isCollapsed && hoveredProjectId === project.id && project.id !== '00000000-0000-0000-0000-000000000001' && (
-                      <DropdownMenu 
-                        open={openDropdownId === project.id} 
-                        onOpenChange={(open) => setOpenDropdownId(open ? project.id : null)}
-                      >
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-3 w-3" />
-                          </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-6 w-6 p-0">
+                          <MoreHorizontal className="h-3 w-3" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               startEditProject(project);
-                              setOpenDropdownId(null);
                             }}
                           >
                             <Edit3 className="h-4 w-4 mr-2" />
@@ -319,11 +308,11 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
                                 handleDeleteProject(project.id);
                               }
-                              setOpenDropdownId(null);
                             }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />

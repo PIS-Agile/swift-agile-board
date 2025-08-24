@@ -15,7 +15,7 @@ import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscriptionV2';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscriptionFixed';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';

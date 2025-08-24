@@ -15,7 +15,7 @@ import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscriptionV2';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
@@ -242,12 +242,20 @@ const Index = () => {
     enabled: !!user && !!selectedProjectId
   });
 
-  // Show connection status in development
+  // Show connection status and add debug logging
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔌 Realtime connection status:', isConnected ? 'Connected' : 'Disconnected');
+    console.log('🔌 Realtime connection status:', isConnected ? 'Connected' : 'Disconnected');
+    if (isConnected) {
+      console.log('✅ Real-time is connected for project:', selectedProjectId);
     }
-  }, [isConnected]);
+  }, [isConnected, selectedProjectId]);
+  
+  // Debug: Force refresh button (only in development)
+  const forceRefresh = () => {
+    console.log('🔄 Force refreshing data...');
+    fetchColumns();
+    fetchItems();
+  };
 
   useEffect(() => {
     if (user && selectedProjectId) {
@@ -546,6 +554,17 @@ const Index = () => {
                   
                   <div className="flex items-center gap-4">
                     <RealtimeStatus />
+                    
+                    {process.env.NODE_ENV === 'development' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={forceRefresh}
+                        title="Force refresh data"
+                      >
+                        🔄 Refresh
+                      </Button>
+                    )}
                     
                     <div className="flex gap-2">
                       <FilterDropdown

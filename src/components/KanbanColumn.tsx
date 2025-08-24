@@ -4,12 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { KanbanItem } from './KanbanItem';
 import { ItemDialog } from './ItemDialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, MoreHorizontal, Trash2, Edit3 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Plus, Trash2, Edit3 } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -185,34 +184,25 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
           </span>
         </div>
         
-        {isHovered && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem 
-                onSelect={() => {
-                  setEditingColumn(true);
-                }}
-                className="cursor-pointer"
-              >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit Column
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  setDeleteDialogOpen(true);
-                }}
-                className="text-destructive focus:text-destructive cursor-pointer"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Column
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {isHovered && !editingColumn && (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => setEditingColumn(true)}
+            >
+              <Edit3 className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         )}
       </div>
 

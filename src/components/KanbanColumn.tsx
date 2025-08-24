@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { KanbanItem } from './KanbanItem';
-import { ItemDialogV2 } from './ItemDialogV2';
+import { ItemDialogV3 } from './ItemDialogV3';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit3, MoreHorizontal, Palette } from 'lucide-react';
 
@@ -303,7 +303,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
             <DialogTitle>Create New Item</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden">
-            <ItemDialogV2
+            <ItemDialogV3
               columnId={column.id}
               projectId={projectId}
               profiles={profiles}

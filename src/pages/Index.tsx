@@ -403,8 +403,8 @@ const Index = () => {
             onProjectSelect={setSelectedProjectId}
           />
           
-          <main className="flex-1 flex flex-col">
-            <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 sticky top-0 z-10">
+          <main className="flex-1 flex flex-col h-screen overflow-hidden">
+            <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 flex-shrink-0">
               <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-4">
                   <SidebarTrigger />
@@ -470,8 +470,8 @@ const Index = () => {
             </header>
 
             <div className="flex-1 overflow-auto">
-              <div className="p-6">
-                <div className="flex gap-6 min-h-full">
+              <div className="p-6 h-full">
+                <div className="flex gap-6 h-full">
                   {columns.map((column) => (
                     <KanbanColumn
                       key={column.id}

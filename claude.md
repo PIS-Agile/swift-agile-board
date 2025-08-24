@@ -10,3 +10,4 @@ when selecting a user to asign an item to, it should list all the available user
 It would be great to be able to select multiple items at the same time (by right-clicking and dragging), then move all of them to another column, or delete them all with the SUPR button.
 
 I want you to make all the necessary database features and tables, and to implement the desired site. 
+as

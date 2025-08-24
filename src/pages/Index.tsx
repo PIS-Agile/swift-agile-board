@@ -648,7 +648,17 @@ const Index = () => {
 
             <div className="flex-1 overflow-auto no-scrollbar">
               <div className="p-6 h-full">
-                <div className="flex gap-6 items-start h-full overflow-x-auto no-scrollbar">
+                <div 
+                  className="flex gap-6 items-start h-full overflow-x-auto no-scrollbar"
+                  onWheel={(e) => {
+                    // Enable horizontal scrolling with shift key or when dragging
+                    const target = e.currentTarget;
+                    if (e.shiftKey || e.deltaX !== 0) {
+                      target.scrollLeft += e.deltaX || e.deltaY;
+                      e.preventDefault();
+                    }
+                  }}
+                >
                   {columns.map((column) => (
                     <KanbanColumn
                       key={column.id}

@@ -120,7 +120,8 @@ All colors MUST be HSL.
   }
 
   .kanban-item-dragging {
-    @apply rotate-2 scale-105 shadow-lg;
+    @apply rotate-2 scale-105 shadow-2xl opacity-80;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
 
   /* Button variants */

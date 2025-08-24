@@ -58,51 +58,14 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [showDropIndicator, setShowDropIndicator] = useState<'top' | 'bottom' | null>(null);
 
-  const [{ isDragging }, drag, dragPreview] = useDrag({
+  const [{ isDragging }, drag] = useDrag({
     type: 'item',
     item: { id: item.id, columnId, position: item.position },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   });
-
-  // Drop target for other items (for fine-grained positioning)
-  const [{ isOver }, drop] = useDrop({
-    accept: 'item',
-    hover: (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
-      if (draggedItem.id === item.id) {
-        setShowDropIndicator(null);
-        return;
-      }
-
-      const hoverBoundingRect = drop.current?.getBoundingClientRect();
-      if (!hoverBoundingRect) return;
-
-      const clientOffset = monitor.getClientOffset();
-      if (!clientOffset) return;
-
-      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-
-      // Show indicator above or below based on cursor position
-      setShowDropIndicator(hoverClientY < hoverMiddleY ? 'top' : 'bottom');
-    },
-    drop: () => {
-      setShowDropIndicator(null);
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
-
-  // Combine drag and drop refs
-  const combinedRef = (el: HTMLDivElement | null) => {
-    drag(el);
-    drop(el);
-    (drop as any).current = el;
-  };
 
   const handleDelete = async () => {
     try {
@@ -150,21 +113,10 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
     }
   };
 
-  // Reset indicator when not hovering
-  useEffect(() => {
-    if (!isOver) {
-      setShowDropIndicator(null);
-    }
-  }, [isOver]);
-
   return (
     <>
-      <div className="relative">
-        {showDropIndicator === 'top' && (
-          <div className="h-0.5 bg-primary rounded-full mb-3 transition-all duration-200 animate-pulse" />
-        )}
-        <Card
-          ref={combinedRef}
+      <Card
+          ref={drag}
           className={`kanban-item cursor-pointer ${
             isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
           } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''}`}
@@ -288,10 +240,6 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
         </div>
       </CardContent>
       </Card>
-        {showDropIndicator === 'bottom' && (
-          <div className="h-0.5 bg-primary rounded-full mt-3 transition-all duration-200 animate-pulse" />
-        )}
-      </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="h-[85vh] max-h-[900px] max-w-6xl overflow-hidden flex flex-col p-0">

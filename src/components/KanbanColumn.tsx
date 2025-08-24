@@ -67,6 +67,7 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
   const [dropIndicatorPosition, setDropIndicatorPosition] = useState<number | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const itemsRef = useRef<HTMLDivElement>(null);
 
   // Drag source for column
   const [{ isDragging }, dragRef] = useDrag({
@@ -95,30 +96,35 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
     accept: 'item',
     hover: (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
       const clientOffset = monitor.getClientOffset();
-      if (!clientOffset || !dropRef.current) {
+      if (!clientOffset || !itemsRef.current) {
         setDropIndicatorPosition(null);
         return;
       }
 
-      const hoverBoundingRect = dropRef.current.getBoundingClientRect();
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      const hoverBoundingRect = itemsRef.current.getBoundingClientRect();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top + itemsRef.current.scrollTop;
       
-      // Find which position the cursor is at
+      // Get all item elements and their positions
+      const itemElements = itemsRef.current.querySelectorAll('.kanban-item-wrapper');
       const sortedItems = [...items].sort((a, b) => a.position - b.position);
-      let targetPosition = 0;
       
-      // Calculate cumulative heights to find drop position
-      let cumulativeHeight = 0;
-      const itemHeight = 120; // Approximate height
+      let targetPosition = sortedItems.length; // Default to end
+      let foundPosition = false;
       
-      for (let i = 0; i < sortedItems.length; i++) {
-        if (hoverClientY < cumulativeHeight + itemHeight / 2) {
-          targetPosition = i;
-          break;
+      // Find drop position based on actual item positions
+      itemElements.forEach((element, index) => {
+        if (foundPosition) return;
+        
+        const rect = element.getBoundingClientRect();
+        const itemTop = rect.top - hoverBoundingRect.top + itemsRef.current!.scrollTop;
+        const itemHeight = rect.height;
+        const itemMiddle = itemTop + itemHeight / 2;
+        
+        if (hoverClientY < itemMiddle) {
+          targetPosition = index;
+          foundPosition = true;
         }
-        cumulativeHeight += itemHeight;
-        targetPosition = i + 1;
-      }
+      });
       
       // Don't show indicator if dropping on the same position
       if (draggedItem.columnId === column.id) {
@@ -134,19 +140,8 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
     },
     drop: async (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
       try {
-        // Get drop position based on where the item was dropped
-        const clientOffset = monitor.getClientOffset();
-        let targetPosition = items.length; // Default to end
-        
-        if (clientOffset && dropRef.current) {
-          const hoverBoundingRect = dropRef.current.getBoundingClientRect();
-          const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-          
-          // Find the position based on which item we're dropping near
-          const sortedItems = [...items].sort((a, b) => a.position - b.position);
-          const itemHeight = 120; // Approximate height of each item
-          targetPosition = Math.min(Math.floor(hoverClientY / itemHeight), sortedItems.length);
-        }
+        // Use the position from the last hover event
+        let targetPosition = dropIndicatorPosition !== null ? dropIndicatorPosition : items.length;
         
         if (draggedItem.columnId === column.id) {
           // Reordering within the same column
@@ -304,7 +299,7 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
       className={`kanban-column p-4 w-80 flex-shrink-0 transition-all relative flex flex-col h-fit ${
         isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
       } ${
-        isOver ? 'ring-2 ring-primary ring-opacity-50' : ''
+        isDraggingOver ? 'ring-2 ring-primary bg-primary/5 shadow-xl' : ''
       } ${
         isOverColumn ? 'scale-105 shadow-lg' : ''
       }`}
@@ -391,13 +386,25 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
         )}
       </div>
 
-      <div className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 no-scrollbar">
+      <div 
+        ref={itemsRef}
+        className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 no-scrollbar"
+        onWheel={(e) => {
+          // Enable scrolling even during drag
+          if (itemsRef.current) {
+            itemsRef.current.scrollTop += e.deltaY;
+          }
+        }}
+      >
         {items
           .sort((a, b) => a.position - b.position)
           .map((item, index) => (
-            <div key={item.id} className="relative">
+            <div key={item.id} className="kanban-item-wrapper relative">
               {isDraggingOver && dropIndicatorPosition === index && (
-                <div className="h-0.5 bg-primary rounded-full mb-3 transition-all duration-200" />
+                <div className="relative mb-3">
+                  <div className="h-1 bg-primary rounded-full transition-all duration-200 shadow-[0_0_10px_rgba(var(--primary)/0.5)]" />
+                  <div className="absolute inset-0 h-1 bg-primary rounded-full animate-pulse" />
+                </div>
               )}
               <KanbanItem
                 item={item}
@@ -410,7 +417,10 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
             </div>
           ))}
         {isDraggingOver && dropIndicatorPosition === items.length && (
-          <div className="h-0.5 bg-primary rounded-full transition-all duration-200" />
+          <div className="relative">
+            <div className="h-1 bg-primary rounded-full transition-all duration-200 shadow-[0_0_10px_rgba(var(--primary)/0.5)]" />
+            <div className="absolute inset-0 h-1 bg-primary rounded-full animate-pulse" />
+          </div>
         )}
       </div>
 

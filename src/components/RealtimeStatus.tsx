@@ -6,7 +6,6 @@ import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
 
 export function RealtimeStatus() {
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   useEffect(() => {
     // Check the realtime connection status
@@ -16,7 +15,6 @@ export function RealtimeStatus() {
       
       if (hasConnected) {
         setStatus('connected');
-        setLastUpdate(new Date());
       } else if (channels.length > 0) {
         setStatus('connecting');
       } else {
@@ -78,12 +76,6 @@ export function RealtimeStatus() {
         >
           Test
         </Button>
-      )}
-      
-      {lastUpdate && status === 'connected' && (
-        <span className="text-xs text-muted-foreground">
-          Last sync: {lastUpdate.toLocaleTimeString()}
-        </span>
       )}
     </div>
   );

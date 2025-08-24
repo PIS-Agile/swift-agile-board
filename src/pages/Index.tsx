@@ -529,57 +529,52 @@ const Index = () => {
           
           <main className="flex-1 flex flex-col h-screen overflow-hidden">
             <header className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 flex-shrink-0">
-              <div className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-4">
-                  <SidebarTrigger />
-                  <div>
-                    <h1 className="text-xl font-semibold">
-                      {selectedProject?.name || 'Loading...'}
-                    </h1>
-                    {selectedProject?.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {selectedProject.description}
-                      </p>
-                    )}
+              <div className="flex flex-col">
+                {/* First row - Title and main actions */}
+                <div className="flex items-center justify-between p-4 pb-3">
+                  <div className="flex items-center gap-4">
+                    <SidebarTrigger />
+                    <div>
+                      <h1 className="text-xl font-semibold">
+                        {selectedProject?.name || 'Loading...'}
+                      </h1>
+                      {selectedProject?.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {selectedProject.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <RealtimeStatus />
                   
-                  <div className="flex gap-2">
-                    <FilterDropdown
-                      projectId={selectedProjectId}
-                      onApplyFilters={handleApplyFilters}
-                      currentFilters={filters}
-                      columns={columns}
-                    />
+                  <div className="flex items-center gap-4">
+                    <RealtimeStatus />
                     
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setDefaultValuesDialogOpen(true)}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Default Values
-                    </Button>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setCustomFieldsDialogOpen(true)}
-                    >
-                      <Settings2 className="h-4 w-4 mr-2" />
-                      Custom Fields
-                    </Button>
-                    
-                    <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Column
-                        </Button>
-                      </DialogTrigger>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setDefaultValuesDialogOpen(true)}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Default Values
+                      </Button>
+                      
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setCustomFieldsDialogOpen(true)}
+                      >
+                        <Settings2 className="h-4 w-4 mr-2" />
+                        Custom Fields
+                      </Button>
+                      
+                      <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Column
+                          </Button>
+                        </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
                           <DialogTitle>Create New Column</DialogTitle>
@@ -627,7 +622,18 @@ const Index = () => {
                         </form>
                       </DialogContent>
                     </Dialog>
+                    </div>
                   </div>
+                </div>
+                
+                {/* Second row - Filters */}
+                <div className="px-4 pb-3">
+                  <FilterDropdown
+                    projectId={selectedProjectId}
+                    onApplyFilters={handleApplyFilters}
+                    currentFilters={filters}
+                    columns={columns}
+                  />
                 </div>
               </div>
             </header>

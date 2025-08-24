@@ -311,7 +311,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
       
       case 'user_multiselect':
         return (
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
             {profiles.map((profile) => (
               <label key={profile.id} className="flex items-center space-x-2">
                 <input
@@ -355,7 +355,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
             <TabsTrigger value="custom">Custom Fields</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="builtin" className="flex-1 overflow-y-auto px-1 space-y-4">
+          <TabsContent value="builtin" className="flex-1 overflow-y-auto px-1 space-y-4 no-scrollbar">
             <div className="space-y-4">
               <div>
                 <Label htmlFor="default-description">Description</Label>
@@ -389,7 +389,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
               
               <div>
                 <Label>Default Assigned Users</Label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3 no-scrollbar">
                   {profiles.map((profile) => (
                     <label key={profile.id} className="flex items-center space-x-2">
                       <input
@@ -428,7 +428,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
             </div>
           </TabsContent>
           
-          <TabsContent value="custom" className="flex-1 overflow-y-auto px-1 space-y-4">
+          <TabsContent value="custom" className="flex-1 overflow-y-auto px-1 space-y-4 no-scrollbar">
             {customFields.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No custom fields have been created yet.

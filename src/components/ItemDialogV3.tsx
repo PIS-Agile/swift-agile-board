@@ -647,7 +647,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
           <div className="flex-1 px-6 pb-6 overflow-hidden flex flex-col">
             <div className="border rounded-lg flex-1 flex flex-col overflow-hidden">
               <EditorToolbar editor={editor} />
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto no-scrollbar">
                 <EditorContent editor={editor} className="h-full" />
               </div>
             </div>
@@ -655,7 +655,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         </div>
 
         {/* Right Panel - Properties */}
-        <div className="w-[400px] bg-muted/30 overflow-y-auto">
+        <div className="w-[400px] bg-muted/30 overflow-y-auto no-scrollbar">
           <div className="p-6 space-y-6">
               {/* Built-in Fields */}
               <div>

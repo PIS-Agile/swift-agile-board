@@ -578,7 +578,7 @@ export function ItemDialogV2({ item, columnId, projectId, profiles, onSave, onCa
 
         {/* Right Panel - Properties */}
         <div className="w-[400px] bg-muted/30 overflow-hidden">
-          <ScrollArea className="h-full">
+          <ScrollArea className="h-full no-scrollbar">
             <div className="p-6 space-y-6">
               {/* Built-in Fields */}
               <div>

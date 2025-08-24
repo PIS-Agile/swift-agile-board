@@ -524,7 +524,7 @@ export function CustomFieldsDialogV2({ projectId, open, onOpenChange }: CustomFi
         </DialogHeader>
 
         <DndProvider backend={HTML5Backend}>
-          <div className="flex-1 overflow-y-auto px-1">
+          <div className="flex-1 overflow-y-auto px-1 no-scrollbar">
             <div className="space-y-3">
               {fields.map((field, index) => (
                 <DraggableField

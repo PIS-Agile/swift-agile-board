@@ -646,9 +646,9 @@ const Index = () => {
               </div>
             </header>
 
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto no-scrollbar">
               <div className="p-6 h-full">
-                <div className="flex gap-6 items-start h-full overflow-x-auto">
+                <div className="flex gap-6 items-start h-full overflow-x-auto no-scrollbar">
                   {columns.map((column) => (
                     <KanbanColumn
                       key={column.id}

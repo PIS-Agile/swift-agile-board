@@ -339,7 +339,7 @@ export function FilterDropdown({
             )}
           </div>
           
-          <ScrollArea className="h-[400px]">
+          <ScrollArea className="h-[400px] no-scrollbar">
             <div className="p-4 pt-2 space-y-4">
               {/* Assigned Users - FIRST */}
               <div className="space-y-2">

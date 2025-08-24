@@ -93,6 +93,15 @@ All colors MUST be HSL.
 }
 
 @layer components {
+  /* Hide scrollbar for all browsers while keeping scroll functionality */
+  .no-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+
   /* Kanban specific styles */
   .kanban-column {
     @apply bg-card border border-border rounded-lg shadow-md min-h-[200px] transition-colors duration-200;

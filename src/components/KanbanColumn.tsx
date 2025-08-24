@@ -391,7 +391,7 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
         )}
       </div>
 
-      <div className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+      <div className="space-y-3 mb-4 relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[200px] pr-2 no-scrollbar">
         {items
           .sort((a, b) => a.position - b.position)
           .map((item, index) => (

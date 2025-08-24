@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,8 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [colorDialogOpen, setColorDialogOpen] = useState(false);
+  const [dropIndicatorPosition, setDropIndicatorPosition] = useState<number | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
 
   // Drag source for column
@@ -90,6 +92,45 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
   // Drop target for items (supports both moving between columns and reordering within)
   const [{ isOver }, dropItems] = useDrop({
     accept: 'item',
+    hover: (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset || !dropRef.current) {
+        setDropIndicatorPosition(null);
+        return;
+      }
+
+      const hoverBoundingRect = dropRef.current.getBoundingClientRect();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      
+      // Find which position the cursor is at
+      const sortedItems = [...items].sort((a, b) => a.position - b.position);
+      let targetPosition = 0;
+      
+      // Calculate cumulative heights to find drop position
+      let cumulativeHeight = 0;
+      const itemHeight = 120; // Approximate height
+      
+      for (let i = 0; i < sortedItems.length; i++) {
+        if (hoverClientY < cumulativeHeight + itemHeight / 2) {
+          targetPosition = i;
+          break;
+        }
+        cumulativeHeight += itemHeight;
+        targetPosition = i + 1;
+      }
+      
+      // Don't show indicator if dropping on the same position
+      if (draggedItem.columnId === column.id) {
+        const currentIndex = sortedItems.findIndex(item => item.id === draggedItem.id);
+        if (currentIndex === targetPosition || currentIndex === targetPosition - 1) {
+          setDropIndicatorPosition(null);
+          return;
+        }
+      }
+      
+      setDropIndicatorPosition(targetPosition);
+      setIsDraggingOver(true);
+    },
     drop: async (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
       try {
         // Get drop position based on where the item was dropped
@@ -184,6 +225,14 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
       isOver: monitor.isOver(),
     }),
   });
+
+  // Reset drop indicator when not dragging
+  useEffect(() => {
+    if (!isOver) {
+      setDropIndicatorPosition(null);
+      setIsDraggingOver(false);
+    }
+  }, [isOver]);
 
   const handleUpdateColumn = async () => {
     if (!columnName.trim()) return;
@@ -341,19 +390,26 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
         )}
       </div>
 
-      <div className="space-y-3 mb-4">
+      <div className="space-y-3 mb-4 relative">
         {items
           .sort((a, b) => a.position - b.position)
-          .map((item) => (
-            <KanbanItem
-              key={item.id}
-              item={item}
-              columnId={column.id}
-              projectId={projectId}
-              profiles={profiles}
-              onUpdate={onItemUpdate}
-            />
+          .map((item, index) => (
+            <div key={item.id} className="relative">
+              {isDraggingOver && dropIndicatorPosition === index && (
+                <div className="h-0.5 bg-primary rounded-full mb-3 transition-all duration-200" />
+              )}
+              <KanbanItem
+                item={item}
+                columnId={column.id}
+                projectId={projectId}
+                profiles={profiles}
+                onUpdate={onItemUpdate}
+              />
+            </div>
           ))}
+        {isDraggingOver && dropIndicatorPosition === items.length && (
+          <div className="h-0.5 bg-primary rounded-full transition-all duration-200" />
+        )}
       </div>
 
       <Dialog open={itemDialogOpen} onOpenChange={setItemDialogOpen}>

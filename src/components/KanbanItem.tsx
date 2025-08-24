@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useDrag } from 'react-dnd';
+import { useState, useEffect } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,14 +57,51 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showDropIndicator, setShowDropIndicator] = useState<'top' | 'bottom' | null>(null);
 
-  const [{ isDragging }, drag] = useDrag({
+  const [{ isDragging }, drag, dragPreview] = useDrag({
     type: 'item',
     item: { id: item.id, columnId, position: item.position },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   });
+
+  // Drop target for other items (for fine-grained positioning)
+  const [{ isOver }, drop] = useDrop({
+    accept: 'item',
+    hover: (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
+      if (draggedItem.id === item.id) {
+        setShowDropIndicator(null);
+        return;
+      }
+
+      const hoverBoundingRect = drop.current?.getBoundingClientRect();
+      if (!hoverBoundingRect) return;
+
+      const clientOffset = monitor.getClientOffset();
+      if (!clientOffset) return;
+
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+
+      // Show indicator above or below based on cursor position
+      setShowDropIndicator(hoverClientY < hoverMiddleY ? 'top' : 'bottom');
+    },
+    drop: () => {
+      setShowDropIndicator(null);
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  // Combine drag and drop refs
+  const combinedRef = (el: HTMLDivElement | null) => {
+    drag(el);
+    drop(el);
+    (drop as any).current = el;
+  };
 
   const handleDelete = async () => {
     try {
@@ -112,17 +149,28 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
     }
   };
 
+  // Reset indicator when not hovering
+  useEffect(() => {
+    if (!isOver) {
+      setShowDropIndicator(null);
+    }
+  }, [isOver]);
+
   return (
     <>
-      <Card
-        ref={drag}
-        className={`kanban-item cursor-pointer ${
-          isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
-        } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleCardClick}
-      >
+      <div className="relative">
+        {showDropIndicator === 'top' && (
+          <div className="h-0.5 bg-primary rounded-full mb-3 transition-all duration-200 animate-pulse" />
+        )}
+        <Card
+          ref={combinedRef}
+          className={`kanban-item cursor-pointer ${
+            isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
+          } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''}`}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          onClick={handleCardClick}
+        >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h4 className="font-medium text-sm flex-1 pr-2">{item.name}</h4>
@@ -239,6 +287,10 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
         </div>
       </CardContent>
       </Card>
+        {showDropIndicator === 'bottom' && (
+          <div className="h-0.5 bg-primary rounded-full mt-3 transition-all duration-200 animate-pulse" />
+        )}
+      </div>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="h-[85vh] max-h-[900px] max-w-6xl overflow-hidden flex flex-col p-0">

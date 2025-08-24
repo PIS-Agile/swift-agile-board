@@ -37,6 +37,7 @@ interface CustomField {
   name: string;
   field_type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'user_select' | 'user_multiselect';
   options?: string[];
+  default_value?: any;
 }
 
 interface CustomFieldValue {
@@ -70,6 +71,9 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
     fetchCustomFields();
     if (item) {
       fetchCustomFieldValues();
+    } else {
+      // Load default values for new items
+      fetchDefaultValues();
     }
   }, [projectId, item]);
 
@@ -83,10 +87,24 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
 
       if (error) throw error;
       
-      setCustomFields(data.map(field => ({
+      const fields = data.map(field => ({
         ...field,
-        options: field.options ? field.options as string[] : undefined
-      })));
+        options: field.options ? field.options as string[] : undefined,
+        default_value: field.default_value
+      }));
+      
+      setCustomFields(fields);
+      
+      // Apply custom field defaults for new items
+      if (!item) {
+        const defaults: Record<string, any> = {};
+        fields.forEach(field => {
+          if (field.default_value !== null && field.default_value !== undefined) {
+            defaults[field.id] = field.default_value;
+          }
+        });
+        setCustomFieldValues(prev => ({ ...defaults, ...prev }));
+      }
     } catch (error: any) {
       console.error('Error fetching custom fields:', error);
     }
@@ -110,6 +128,37 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
       setCustomFieldValues(values);
     } catch (error: any) {
       console.error('Error fetching custom field values:', error);
+    }
+  };
+
+  const fetchDefaultValues = async () => {
+    try {
+      // Fetch project defaults for built-in fields
+      const { data: defaultsData, error: defaultsError } = await supabase
+        .from('project_defaults')
+        .select('*')
+        .eq('project_id', projectId);
+
+      if (defaultsError) throw defaultsError;
+
+      // Apply built-in field defaults
+      defaultsData?.forEach(defaultItem => {
+        switch (defaultItem.field_name) {
+          case 'description':
+            setDescription(defaultItem.default_value || '');
+            break;
+          case 'estimated_time':
+            setEstimatedTime(defaultItem.default_value?.toString() || '');
+            break;
+          case 'assigned_to':
+            if (Array.isArray(defaultItem.default_value)) {
+              setSelectedUserIds(defaultItem.default_value);
+            }
+            break;
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching default values:', error);
     }
   };
 

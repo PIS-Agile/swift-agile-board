@@ -11,11 +11,12 @@ import { Label } from '@/components/ui/label';
 import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
 import { CustomFieldsDialog } from '@/components/CustomFieldsDialog';
+import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Menu, Settings2 } from 'lucide-react';
+import { Plus, Menu, Settings2, FileText } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface Column {
@@ -79,6 +80,7 @@ const Index = () => {
   const [newColumnName, setNewColumnName] = useState('');
   const [newColumnColor, setNewColumnColor] = useState('#6366f1');
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
+  const [defaultValuesDialogOpen, setDefaultValuesDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -411,6 +413,15 @@ const Index = () => {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => setDefaultValuesDialogOpen(true)}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Default Values
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => setCustomFieldsDialogOpen(true)}
                     >
                       <Settings2 className="h-4 w-4 mr-2" />
@@ -521,6 +532,12 @@ const Index = () => {
           projectId={selectedProjectId}
           open={customFieldsDialogOpen}
           onOpenChange={setCustomFieldsDialogOpen}
+        />
+        
+        <DefaultValuesDialog
+          projectId={selectedProjectId}
+          open={defaultValuesDialogOpen}
+          onOpenChange={setDefaultValuesDialogOpen}
         />
       </SidebarProvider>
     </DndProvider>

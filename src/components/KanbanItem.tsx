@@ -104,19 +104,26 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
           <h4 className="font-medium text-sm flex-1 pr-2">{item.name}</h4>
           {isHovered && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                 <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex-shrink-0">
                   <MoreHorizontal className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setEditDialogOpen(true)}>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem 
+                  onSelect={() => {
+                    setEditDialogOpen(true);
+                  }}
+                  className="cursor-pointer"
+                >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit Item
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onSelect={() => setDeleteDialogOpen(true)}
+                  onSelect={() => {
+                    setDeleteDialogOpen(true);
+                  }}
+                  className="text-destructive focus:text-destructive cursor-pointer"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Item

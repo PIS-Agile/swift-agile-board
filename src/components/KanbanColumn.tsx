@@ -187,19 +187,26 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
         
         {isHovered && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                 <MoreHorizontal className="h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => setEditingColumn(true)}>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem 
+                onSelect={() => {
+                  setEditingColumn(true);
+                }}
+                className="cursor-pointer"
+              >
                 <Edit3 className="h-4 w-4 mr-2" />
                 Edit Column
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={() => setDeleteDialogOpen(true)}
+                onSelect={() => {
+                  setDeleteDialogOpen(true);
+                }}
+                className="text-destructive focus:text-destructive cursor-pointer"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Column

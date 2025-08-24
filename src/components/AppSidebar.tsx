@@ -293,23 +293,28 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                     </SidebarMenuButton>
                     {!isCollapsed && hoveredProjectId === project.id && project.id !== '00000000-0000-0000-0000-000000000001' && (
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                             <MoreHorizontal className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => startEditProject(project)}>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem 
+                            onSelect={() => {
+                              startEditProject(project);
+                            }}
+                            className="cursor-pointer"
+                          >
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Project
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
                             onSelect={() => {
                               if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
                                 handleDeleteProject(project.id);
                               }
                             }}
+                            className="text-destructive focus:text-destructive cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Project

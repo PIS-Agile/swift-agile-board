@@ -247,10 +247,10 @@ const Index = () => {
             email
           )
         ),
-        custom_field_values:item_custom_field_values(
+        custom_field_values:item_field_values(
           field_id,
           value,
-          custom_fields!item_custom_field_values_field_id_fkey(
+          custom_fields!item_field_values_field_id_fkey(
             name,
             field_type
           )
@@ -290,10 +290,10 @@ const Index = () => {
             email
           )
         ),
-        custom_field_values:item_custom_field_values(
+        custom_field_values:item_field_values(
           field_id,
           value,
-          custom_fields!item_custom_field_values_field_id_fkey(
+          custom_fields!item_field_values_field_id_fkey(
             name,
             field_type
           )

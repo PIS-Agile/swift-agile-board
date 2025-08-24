@@ -97,7 +97,7 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
     
     try {
       const { data, error } = await supabase
-        .from('item_custom_field_values')
+        .from('item_field_values')
         .select('*')
         .eq('item_id', item.id);
 
@@ -186,7 +186,7 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
       // Update custom field values
       // First, remove all existing custom field values
       await supabase
-        .from('item_custom_field_values')
+        .from('item_field_values')
         .delete()
         .eq('item_id', itemId);
 
@@ -200,7 +200,7 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
         }));
 
         const { error: customFieldError } = await supabase
-          .from('item_custom_field_values')
+          .from('item_field_values')
           .insert(fieldValues);
 
         if (customFieldError) throw customFieldError;

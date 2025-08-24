@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useDrop } from 'react-dnd';
+import { useDrag, useDrop } from 'react-dnd';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { KanbanItem } from './KanbanItem';
 import { ItemDialog } from './ItemDialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit3, MoreHorizontal } from 'lucide-react';
+import { Plus, Trash2, Edit3, MoreHorizontal, Palette } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -51,17 +51,43 @@ interface KanbanColumnProps {
   projectId: string;
   onItemUpdate: () => void;
   onColumnUpdate: () => void;
+  onColumnReorder?: (draggedColumnId: string, targetColumnId: string) => void;
 }
 
-export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate, onColumnUpdate }: KanbanColumnProps) {
+export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate, onColumnUpdate, onColumnReorder }: KanbanColumnProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
+  const [columnColor, setColumnColor] = useState(column.color);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [colorDialogOpen, setColorDialogOpen] = useState(false);
 
-  const [{ isOver }, drop] = useDrop({
+  // Drag source for column
+  const [{ isDragging }, dragRef] = useDrag({
+    type: 'column',
+    item: { id: column.id, position: column.position },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  // Drop target for columns (for reordering)
+  const [{ isOverColumn }, dropColumn] = useDrop({
+    accept: 'column',
+    drop: (draggedColumn: { id: string; position: number }) => {
+      if (onColumnReorder && draggedColumn.id !== column.id) {
+        onColumnReorder(draggedColumn.id, column.id);
+      }
+    },
+    collect: (monitor) => ({
+      isOverColumn: monitor.isOver(),
+    }),
+  });
+
+  // Drop target for items
+  const [{ isOver }, dropItems] = useDrop({
     accept: 'item',
     drop: async (draggedItem: { id: string; columnId: string }) => {
       if (draggedItem.columnId === column.id) return;
@@ -101,17 +127,21 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
     try {
       const { error } = await supabase
         .from('columns')
-        .update({ name: columnName.trim() })
+        .update({ 
+          name: columnName.trim(),
+          color: columnColor
+        })
         .eq('id', column.id);
 
       if (error) throw error;
       
       setEditingColumn(false);
+      setColorDialogOpen(false);
       onColumnUpdate();
       
       toast({
         title: "Column updated",
-        description: "Column name has been updated successfully.",
+        description: "Column has been updated successfully.",
       });
     } catch (error: any) {
       toast({
@@ -146,11 +176,22 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
     }
   };
 
+  // Combine refs for both drag and drop
+  const combinedRef = (el: HTMLDivElement | null) => {
+    dragRef(el);
+    dropColumn(el);
+    dropItems(el);
+  };
+
   return (
     <div
-      ref={drop}
-      className={`kanban-column p-4 w-80 flex-shrink-0 ${
+      ref={combinedRef}
+      className={`kanban-column p-4 w-80 flex-shrink-0 transition-all ${
+        isDragging ? 'opacity-50 cursor-grabbing' : 'cursor-grab'
+      } ${
         isOver ? 'ring-2 ring-primary ring-opacity-50' : ''
+      } ${
+        isOverColumn ? 'scale-105 shadow-lg' : ''
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -205,7 +246,16 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
                 }}
               >
                 <Edit3 className="h-4 w-4 mr-2" />
-                Edit Column
+                Rename Column
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setColorDialogOpen(true);
+                  setDropdownOpen(false);
+                }}
+              >
+                <Palette className="h-4 w-4 mr-2" />
+                Change Color
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
@@ -279,6 +329,49 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={colorDialogOpen} onOpenChange={setColorDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Change Column Color</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 px-1">
+            <div className="space-y-2">
+              <label htmlFor="column-color-picker">Select Color</label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  id="column-color-picker"
+                  type="color"
+                  value={columnColor}
+                  onChange={(e) => setColumnColor(e.target.value)}
+                  className="w-20 h-10 cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={columnColor}
+                  onChange={(e) => setColumnColor(e.target.value)}
+                  placeholder="#6366f1"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setColorDialogOpen(false);
+                  setColumnColor(column.color);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateColumn}>
+                Save Color
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

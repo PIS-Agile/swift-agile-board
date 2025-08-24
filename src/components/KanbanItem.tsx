@@ -163,7 +163,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
         </div>
 
         {item.description && (
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+          <p className="text-xs text-muted-foreground mb-3 line-clamp-4">
             {item.description}
           </p>
         )}

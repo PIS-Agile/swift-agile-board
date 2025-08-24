@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DndProvider } from 'react-dnd';
+import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -77,6 +77,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [newColumnDialogOpen, setNewColumnDialogOpen] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
+  const [newColumnColor, setNewColumnColor] = useState('#6366f1');
   const [customFieldsDialogOpen, setCustomFieldsDialogOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -262,7 +263,7 @@ const Index = () => {
             name: newColumnName.trim(),
             project_id: selectedProjectId,
             position: columns.length,
-            color: '#6366f1',
+            color: newColumnColor,
           },
         ])
         .select()
@@ -272,6 +273,7 @@ const Index = () => {
 
       setColumns([...columns, data]);
       setNewColumnName('');
+      setNewColumnColor('#6366f1');
       setNewColumnDialogOpen(false);
       
       toast({
@@ -306,6 +308,55 @@ const Index = () => {
     } catch (error: any) {
       toast({
         title: "Error updating columns",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleColumnReorder = async (draggedColumnId: string, targetColumnId: string) => {
+    const draggedColumn = columns.find(col => col.id === draggedColumnId);
+    const targetColumn = columns.find(col => col.id === targetColumnId);
+    
+    if (!draggedColumn || !targetColumn || draggedColumn.id === targetColumn.id) return;
+
+    const draggedIndex = columns.indexOf(draggedColumn);
+    const targetIndex = columns.indexOf(targetColumn);
+
+    // Create new columns array with swapped positions
+    const newColumns = [...columns];
+    const [removed] = newColumns.splice(draggedIndex, 1);
+    newColumns.splice(targetIndex, 0, removed);
+
+    // Update positions in the new array
+    const updates = newColumns.map((col, index) => ({
+      id: col.id,
+      position: index
+    }));
+
+    // Update local state optimistically
+    setColumns(newColumns.map((col, index) => ({ ...col, position: index })));
+
+    try {
+      // Update all column positions in database
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('columns')
+          .update({ position: update.position })
+          .eq('id', update.id);
+        
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Columns reordered",
+        description: "Column order has been updated successfully.",
+      });
+    } catch (error: any) {
+      // Revert on error
+      await fetchColumns();
+      toast({
+        title: "Error reordering columns",
         description: error.message,
         variant: "destructive",
       });
@@ -388,6 +439,25 @@ const Index = () => {
                               required
                             />
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="column-color">Column Color</Label>
+                            <div className="flex gap-2 items-center">
+                              <Input
+                                id="column-color"
+                                type="color"
+                                value={newColumnColor}
+                                onChange={(e) => setNewColumnColor(e.target.value)}
+                                className="w-20 h-10 cursor-pointer"
+                              />
+                              <Input
+                                type="text"
+                                value={newColumnColor}
+                                onChange={(e) => setNewColumnColor(e.target.value)}
+                                placeholder="#6366f1"
+                                className="flex-1"
+                              />
+                            </div>
+                          </div>
                           <div className="flex justify-end gap-2">
                             <Button
                               type="button"
@@ -418,6 +488,7 @@ const Index = () => {
                       projectId={selectedProjectId}
                       onItemUpdate={handleItemUpdate}
                       onColumnUpdate={handleColumnUpdate}
+                      onColumnReorder={handleColumnReorder}
                     />
                   ))}
                   

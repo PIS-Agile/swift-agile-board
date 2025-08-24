@@ -200,21 +200,23 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
       </CardContent>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>
-          <ItemDialog
-            item={item}
-            columnId={columnId}
-            projectId={projectId}
-            profiles={profiles}
-            onSave={() => {
-              onUpdate();
-              setEditDialogOpen(false);
-            }}
-            onCancel={() => setEditDialogOpen(false)}
-          />
+          <div className="overflow-y-auto flex-1">
+            <ItemDialog
+              item={item}
+              columnId={columnId}
+              projectId={projectId}
+              profiles={profiles}
+              onSave={() => {
+                onUpdate();
+                setEditDialogOpen(false);
+              }}
+              onCancel={() => setEditDialogOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

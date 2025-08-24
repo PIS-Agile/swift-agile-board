@@ -244,20 +244,22 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
             Add item
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Create New Item</DialogTitle>
           </DialogHeader>
-          <ItemDialog
-            columnId={column.id}
-            projectId={projectId}
-            profiles={profiles}
-            onSave={() => {
-              onItemUpdate();
-              setItemDialogOpen(false);
-            }}
-            onCancel={() => setItemDialogOpen(false)}
-          />
+          <div className="overflow-y-auto flex-1">
+            <ItemDialog
+              columnId={column.id}
+              projectId={projectId}
+              profiles={profiles}
+              onSave={() => {
+                onItemUpdate();
+                setItemDialogOpen(false);
+              }}
+              onCancel={() => setItemDialogOpen(false)}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 

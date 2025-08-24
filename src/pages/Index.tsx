@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -12,6 +12,8 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
 import { CustomFieldsDialog } from '@/components/CustomFieldsDialog';
 import { TestDropdown } from '@/components/TestDropdown';
+import { RealtimeStatus } from '@/components/RealtimeStatus';
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2 } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
@@ -104,144 +106,6 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      fetchData().finally(() => setLoading(false));
-    }
-  }, [user, selectedProjectId]);
-
-  // Set up real-time subscriptions
-  useEffect(() => {
-    if (!user || !selectedProjectId) return;
-
-    let mounted = true;
-
-    // Subscribe to all changes for this project - use consistent channel name across clients
-    const channel = supabase
-      .channel(`project-${selectedProjectId}`) // Remove timestamp to share channel across clients
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'items'
-        },
-        async (payload) => {
-          console.log('Items change detected:', payload);
-          if (!mounted) return;
-          // Small delay to avoid race conditions
-          setTimeout(() => {
-            if (mounted) fetchItems();
-          }, 100);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'columns',
-          filter: `project_id=eq.${selectedProjectId}`
-        },
-        (payload) => {
-          console.log('Columns change detected:', payload);
-          if (!mounted) return;
-          setTimeout(() => {
-            if (mounted) {
-              fetchColumns();
-              fetchItems();
-            }
-          }, 100);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'item_assignments'
-        },
-        (payload) => {
-          console.log('Item assignments change detected:', payload);
-          if (!mounted) return;
-          setTimeout(() => {
-            if (mounted) fetchItems();
-          }, 100);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'item_field_values'
-        },
-        (payload) => {
-          console.log('Custom field values change detected:', payload);
-          if (!mounted) return;
-          setTimeout(() => {
-            if (mounted) fetchItems();
-          }, 100);
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'custom_fields',
-          filter: `project_id=eq.${selectedProjectId}`
-        },
-        (payload) => {
-          console.log('Custom fields change detected:', payload);
-          if (!mounted) return;
-          setTimeout(() => {
-            if (mounted) fetchItems(); // Refresh items to get updated field definitions
-          }, 100);
-        }
-      )
-      .subscribe((status, err) => {
-        console.log('Subscription status:', status);
-        if (err) {
-          console.error('Subscription error:', err);
-          toast({
-            title: "Real-time connection issue",
-            description: "Live updates may not work. Please refresh if needed.",
-            variant: "destructive",
-          });
-        }
-        if (status === 'SUBSCRIBED') {
-          console.log(`Successfully subscribed to project ${selectedProjectId} changes`);
-        }
-      });
-
-    return () => {
-      mounted = false;
-      console.log('Cleaning up subscription for project:', selectedProjectId);
-      supabase.removeChannel(channel);
-    };
-  }, [user, selectedProjectId]);
-
-  const fetchData = async () => {
-    try {
-      // Fetch project and profiles first
-      const [projectData, profilesData, columnsData] = await Promise.all([
-        fetchProject(),
-        fetchProfiles(),
-        fetchColumnsData(),
-      ]);
-      // Then fetch items using the columns data
-      await fetchItemsForColumns(columnsData);
-    } catch (error: any) {
-      toast({
-        title: "Error loading data",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const fetchProject = async () => {
     const { data, error } = await supabase
       .from('projects')
@@ -254,106 +118,6 @@ const Index = () => {
     return data;
   };
 
-  const fetchColumns = async () => {
-    const { data, error } = await supabase
-      .from('columns')
-      .select('*')
-      .eq('project_id', selectedProjectId)
-      .order('position', { ascending: true });
-
-    if (error) throw error;
-    setColumns(data || []);
-  };
-
-  const fetchColumnsData = async () => {
-    const { data, error } = await supabase
-      .from('columns')
-      .select('*')
-      .eq('project_id', selectedProjectId)
-      .order('position', { ascending: true });
-
-    if (error) throw error;
-    setColumns(data || []);
-    return data || [];
-  };
-
-  const fetchItemsForColumns = async (columnsData: any[]) => {
-    if (!columnsData || columnsData.length === 0) {
-      setItems([]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('items')
-      .select(`
-        *,
-        assignments:item_assignments(
-          user_id,
-          profiles!item_assignments_user_id_fkey(
-            id,
-            full_name,
-            email
-          )
-        ),
-        custom_field_values:item_field_values(
-          field_id,
-          value,
-          custom_fields!item_field_values_field_id_fkey(
-            name,
-            field_type
-          )
-        )
-      `)
-      .in('column_id', columnsData.map(col => col.id))
-      .order('position', { ascending: true });
-
-    if (error) throw error;
-    setItems(data || []);
-  };
-
-  const fetchItems = async () => {
-    // First get columns for this project to ensure we have the latest data
-    const { data: columnsData, error: columnsError } = await supabase
-      .from('columns')
-      .select('id')
-      .eq('project_id', selectedProjectId);
-
-    if (columnsError) throw columnsError;
-
-    // If no columns, set items to empty
-    if (!columnsData || columnsData.length === 0) {
-      setItems([]);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('items')
-      .select(`
-        *,
-        assignments:item_assignments(
-          user_id,
-          profiles!item_assignments_user_id_fkey(
-            id,
-            full_name,
-            email
-          )
-        ),
-        custom_field_values:item_field_values(
-          field_id,
-          value,
-          custom_fields!item_field_values_field_id_fkey(
-            name,
-            field_type
-          )
-        )
-      `)
-      .in('column_id', columnsData.map(col => col.id))
-      .order('position', { ascending: true });
-
-    if (error) throw error;
-    setItems(data || []);
-  };
-
   const fetchProfiles = async () => {
     const { data, error } = await supabase
       .from('profiles')
@@ -364,6 +128,127 @@ const Index = () => {
     setProfiles(data || []);
     return data || [];
   };
+
+  const fetchColumns = useCallback(async () => {
+    if (!selectedProjectId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('columns')
+        .select('*')
+        .eq('project_id', selectedProjectId)
+        .order('position', { ascending: true });
+
+      if (error) throw error;
+      console.log('📊 Fetched columns:', data?.length || 0);
+      setColumns(data || []);
+    } catch (error) {
+      console.error('Error fetching columns:', error);
+    }
+  }, [selectedProjectId]);
+
+  const fetchItems = useCallback(async () => {
+    if (!selectedProjectId) return;
+    
+    try {
+      // First get columns for this project to ensure we have the latest data
+      const { data: columnsData, error: columnsError } = await supabase
+        .from('columns')
+        .select('id')
+        .eq('project_id', selectedProjectId);
+
+      if (columnsError) throw columnsError;
+
+      // If no columns, set items to empty
+      if (!columnsData || columnsData.length === 0) {
+        setItems([]);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('items')
+        .select(`
+          *,
+          assignments:item_assignments(
+            user_id,
+            profiles!item_assignments_user_id_fkey(
+              id,
+              full_name,
+              email
+            )
+          ),
+          custom_field_values:item_field_values(
+            field_id,
+            value,
+            custom_fields!item_field_values_field_id_fkey(
+              name,
+              field_type
+            )
+          )
+        `)
+        .in('column_id', columnsData.map(col => col.id))
+        .order('position', { ascending: true });
+
+      if (error) throw error;
+      console.log('📦 Fetched items:', data?.length || 0);
+      setItems(data || []);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    }
+  }, [selectedProjectId]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch project and profiles first
+      const [projectData, profilesData] = await Promise.all([
+        fetchProject(),
+        fetchProfiles(),
+      ]);
+      // Then fetch columns and items
+      await fetchColumns();
+      await fetchItems();
+    } catch (error: any) {
+      toast({
+        title: "Error loading data",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  }, [fetchColumns, fetchItems]);
+
+  // Memoize the callbacks to prevent unnecessary re-renders
+  const handleRealtimeItemsChange = useCallback(() => {
+    console.log('📦 Handling realtime items change');
+    fetchItems();
+  }, [fetchItems]);
+
+  const handleRealtimeColumnsChange = useCallback(() => {
+    console.log('📊 Handling realtime columns change');
+    fetchColumns();
+    fetchItems(); // Also refresh items when columns change
+  }, [fetchColumns, fetchItems]);
+
+  // Use the new realtime subscription hook
+  const { isConnected } = useRealtimeSubscription({
+    projectId: selectedProjectId,
+    onItemsChange: handleRealtimeItemsChange,
+    onColumnsChange: handleRealtimeColumnsChange,
+    enabled: !!user && !!selectedProjectId
+  });
+
+  // Show connection status in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔌 Realtime connection status:', isConnected ? 'Connected' : 'Disconnected');
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    if (user && selectedProjectId) {
+      setLoading(true);
+      fetchData().finally(() => setLoading(false));
+    }
+  }, [user, selectedProjectId, fetchData]);
 
   const handleCreateColumn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -468,51 +353,55 @@ const Index = () => {
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setCustomFieldsDialogOpen(true)}
-                  >
-                    <Settings2 className="h-4 w-4 mr-2" />
-                    Custom Fields
-                  </Button>
+                <div className="flex items-center gap-4">
+                  <RealtimeStatus />
                   
-                  <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Column
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setCustomFieldsDialogOpen(true)}
+                    >
+                      <Settings2 className="h-4 w-4 mr-2" />
+                      Custom Fields
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                      <DialogTitle>Create New Column</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleCreateColumn} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="column-name">Column Name</Label>
-                        <Input
-                          id="column-name"
-                          value={newColumnName}
-                          onChange={(e) => setNewColumnName(e.target.value)}
-                          placeholder="Enter column name"
-                          required
-                        />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setNewColumnDialogOpen(false)}
-                        >
-                          Cancel
+                    
+                    <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Column
                         </Button>
-                        <Button type="submit">Create Column</Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Create New Column</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleCreateColumn} className="space-y-4 px-1">
+                          <div className="space-y-2">
+                            <Label htmlFor="column-name">Column Name</Label>
+                            <Input
+                              id="column-name"
+                              value={newColumnName}
+                              onChange={(e) => setNewColumnName(e.target.value)}
+                              placeholder="Enter column name"
+                              required
+                            />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setNewColumnDialogOpen(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit">Create Column</Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
               </div>
             </header>

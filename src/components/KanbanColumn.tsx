@@ -248,7 +248,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
           <DialogHeader>
             <DialogTitle>Create New Item</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 px-1">
             <ItemDialog
               columnId={column.id}
               projectId={projectId}

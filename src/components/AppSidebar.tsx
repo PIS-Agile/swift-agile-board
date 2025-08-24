@@ -350,7 +350,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                     <DialogHeader>
                       <DialogTitle>Create New Project</DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleCreateProject} className="space-y-4">
+                    <form onSubmit={handleCreateProject} className="space-y-4 px-1">
                       <div className="space-y-2">
                         <Label htmlFor="project-name">Project Name</Label>
                         <Input
@@ -422,7 +422,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleEditProject} className="space-y-4">
+          <form onSubmit={handleEditProject} className="space-y-4 px-1">
             <div className="space-y-2">
               <Label htmlFor="edit-project-name">Project Name</Label>
               <Input

@@ -136,7 +136,7 @@ export function CustomFieldsDialog({ projectId, open, onOpenChange }: CustomFiel
           <DialogTitle>Manage Custom Fields</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 px-1">
           <form onSubmit={handleAddField} className="space-y-4 border-b pb-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

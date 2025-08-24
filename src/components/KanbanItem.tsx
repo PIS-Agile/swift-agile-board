@@ -106,23 +106,23 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
                            target.closest('[role="menuitem"]') || 
                            target.closest('button');
     
-    if (!isDragging && !editDialogOpen && !deleteDialogOpen && !isDropdownClick) {
+    if (!isDragging && !isDropdownClick) {
       e.stopPropagation();
-      // Small delay to prevent reopening when dialog is closing
-      setTimeout(() => setEditDialogOpen(true), 0);
+      setEditDialogOpen(true);
     }
   };
 
   return (
-    <Card
-      ref={drag}
-      className={`kanban-item cursor-pointer ${
-        isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
-      }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={handleCardClick}
-    >
+    <>
+      <Card
+        ref={drag}
+        className={`kanban-item cursor-pointer ${
+          isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
+        } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleCardClick}
+      >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h4 className="font-medium text-sm flex-1 pr-2">{item.name}</h4>
@@ -244,13 +244,14 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
           )}
         </div>
       </CardContent>
+      </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1">
+          <div className="overflow-y-auto flex-1 px-1">
             <ItemDialog
               item={item}
               columnId={columnId}
@@ -282,6 +283,6 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </>
   );
 }

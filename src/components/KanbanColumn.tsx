@@ -57,6 +57,7 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
   const [columnName, setColumnName] = useState(column.name);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [{ isOver }, drop] = useDrop({
     accept: 'item',
@@ -191,13 +192,13 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditingColumn(true)}>
+              <DropdownMenuItem onSelect={() => setEditingColumn(true)}>
                 <Edit3 className="h-4 w-4 mr-2" />
                 Edit Column
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
-                onClick={() => document.getElementById(`delete-column-trigger-${column.id}`)?.click()}
+                onSelect={() => setDeleteDialogOpen(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Column
@@ -244,10 +245,7 @@ export function KanbanColumn({ column, items, profiles, onItemUpdate, onColumnUp
         </DialogContent>
       </Dialog>
 
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <button id={`delete-column-trigger-${column.id}`} className="hidden" />
-        </AlertDialogTrigger>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Column</AlertDialogTitle>

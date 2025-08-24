@@ -107,26 +107,23 @@ const Index = () => {
   useEffect(() => {
     if (!user || !selectedProjectId) return;
 
-    // Subscribe to items changes
-    const itemsChannel = supabase
-      .channel('items-changes')
+    console.log('Setting up real-time subscriptions for project:', selectedProjectId);
+
+    // Subscribe to all changes for this project
+    const channel = supabase
+      .channel(`project-${selectedProjectId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'items',
-          filter: `project_id=eq.${selectedProjectId}`
+          table: 'items'
         },
-        () => {
+        (payload) => {
+          console.log('Items change received:', payload);
           fetchItems();
         }
       )
-      .subscribe();
-
-    // Subscribe to columns changes
-    const columnsChannel = supabase
-      .channel('columns-changes')
       .on(
         'postgres_changes',
         {
@@ -135,15 +132,12 @@ const Index = () => {
           table: 'columns',
           filter: `project_id=eq.${selectedProjectId}`
         },
-        () => {
+        (payload) => {
+          console.log('Columns change received:', payload);
           fetchColumns();
+          fetchItems(); // Also refresh items when columns change
         }
       )
-      .subscribe();
-
-    // Subscribe to item_assignments changes
-    const assignmentsChannel = supabase
-      .channel('assignments-changes')
       .on(
         'postgres_changes',
         {
@@ -151,16 +145,18 @@ const Index = () => {
           schema: 'public',
           table: 'item_assignments'
         },
-        () => {
+        (payload) => {
+          console.log('Assignments change received:', payload);
           fetchItems();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
-      supabase.removeChannel(itemsChannel);
-      supabase.removeChannel(columnsChannel);
-      supabase.removeChannel(assignmentsChannel);
+      console.log('Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
     };
   }, [user, selectedProjectId]);
 

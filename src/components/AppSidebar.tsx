@@ -20,7 +20,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trello, Plus, FolderKanban, LogOut, User, MoreHorizontal, Edit3, Trash2 } from 'lucide-react';
 
 interface Project {
@@ -300,13 +299,17 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => startEditProject(project)}>
+                          <DropdownMenuItem onSelect={() => startEditProject(project)}>
                             <Edit3 className="h-4 w-4 mr-2" />
                             Edit Project
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => document.getElementById(`delete-project-trigger-${project.id}`)?.click()}
+                            onSelect={() => {
+                              if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
+                                handleDeleteProject(project.id);
+                              }
+                            }}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Project
@@ -315,28 +318,6 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                       </DropdownMenu>
                     )}
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <button id={`delete-project-trigger-${project.id}`} className="hidden" />
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete "{project.name}"? This will permanently delete all columns and items in this project. This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => handleDeleteProject(project.id)} 
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
                 </SidebarMenuItem>
               ))}
               

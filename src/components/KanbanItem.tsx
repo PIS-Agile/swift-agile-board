@@ -46,6 +46,7 @@ interface KanbanItemProps {
 export function KanbanItem({ item, columnId, profiles, onUpdate }: KanbanItemProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [{ isDragging }, drag] = useDrag({
     type: 'item',
@@ -108,13 +109,13 @@ export function KanbanItem({ item, columnId, profiles, onUpdate }: KanbanItemPro
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+                <DropdownMenuItem onSelect={() => setEditDialogOpen(true)}>
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit Item
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-destructive focus:text-destructive"
-                  onClick={() => document.getElementById(`delete-item-trigger-${item.id}`)?.click()}
+                  onSelect={() => setDeleteDialogOpen(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Item
@@ -185,10 +186,7 @@ export function KanbanItem({ item, columnId, profiles, onUpdate }: KanbanItemPro
         </DialogContent>
       </Dialog>
 
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <button id={`delete-item-trigger-${item.id}`} className="hidden" />
-        </AlertDialogTrigger>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Item</AlertDialogTitle>

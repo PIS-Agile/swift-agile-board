@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [colorDialogOpen, setColorDialogOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
 
   // Drag source for column
   const [{ isDragging }, dragRef] = useDrag({
@@ -86,28 +87,91 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
     }),
   });
 
-  // Drop target for items
+  // Drop target for items (supports both moving between columns and reordering within)
   const [{ isOver }, dropItems] = useDrop({
     accept: 'item',
-    drop: async (draggedItem: { id: string; columnId: string }) => {
-      if (draggedItem.columnId === column.id) return;
-
+    drop: async (draggedItem: { id: string; columnId: string; position: number }, monitor) => {
       try {
-        const { error } = await supabase
-          .from('items')
-          .update({ 
-            column_id: column.id,
-            position: items.length
-          })
-          .eq('id', draggedItem.id);
-
-        if (error) throw error;
-        onItemUpdate();
+        // Get drop position based on where the item was dropped
+        const clientOffset = monitor.getClientOffset();
+        let targetPosition = items.length; // Default to end
         
-        toast({
-          title: "Item moved",
-          description: `Item moved to ${column.name}`,
-        });
+        if (clientOffset && dropRef.current) {
+          const hoverBoundingRect = dropRef.current.getBoundingClientRect();
+          const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+          
+          // Find the position based on which item we're dropping near
+          const sortedItems = [...items].sort((a, b) => a.position - b.position);
+          const itemHeight = 120; // Approximate height of each item
+          targetPosition = Math.min(Math.floor(hoverClientY / itemHeight), sortedItems.length);
+        }
+        
+        if (draggedItem.columnId === column.id) {
+          // Reordering within the same column
+          const sortedItems = [...items].sort((a, b) => a.position - b.position);
+          const currentIndex = sortedItems.findIndex(item => item.id === draggedItem.id);
+          
+          if (currentIndex === -1 || currentIndex === targetPosition) return;
+          
+          // Remove item from current position and insert at new position
+          const [movedItem] = sortedItems.splice(currentIndex, 1);
+          sortedItems.splice(targetPosition > currentIndex ? targetPosition - 1 : targetPosition, 0, movedItem);
+          
+          // Update positions for all items
+          const updates = sortedItems.map((item, index) => ({
+            id: item.id,
+            position: index
+          }));
+          
+          // Batch update changed positions
+          for (const update of updates) {
+            const originalItem = items.find(i => i.id === update.id);
+            if (originalItem && originalItem.position !== update.position) {
+              await supabase
+                .from('items')
+                .update({ position: update.position })
+                .eq('id', update.id);
+            }
+          }
+          
+          toast({
+            title: "Item reordered",
+            description: "Item position updated",
+          });
+        } else {
+          // Moving to a different column
+          const sortedItems = [...items].sort((a, b) => a.position - b.position);
+          
+          // Insert at target position
+          sortedItems.splice(targetPosition, 0, { ...draggedItem, position: targetPosition } as any);
+          
+          // Update the moved item
+          await supabase
+            .from('items')
+            .update({ 
+              column_id: column.id,
+              position: targetPosition,
+              project_id: projectId // Ensure project_id is set
+            })
+            .eq('id', draggedItem.id);
+          
+          // Update positions of items after the insertion point
+          for (let i = targetPosition + 1; i < sortedItems.length; i++) {
+            if (sortedItems[i].id !== draggedItem.id) {
+              await supabase
+                .from('items')
+                .update({ position: i })
+                .eq('id', sortedItems[i].id);
+            }
+          }
+          
+          toast({
+            title: "Item moved",
+            description: `Item moved to ${column.name}`,
+          });
+        }
+        
+        onItemUpdate();
       } catch (error: any) {
         toast({
           title: "Error moving item",
@@ -181,6 +245,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
     dragRef(el);
     dropColumn(el);
     dropItems(el);
+    dropRef.current = el;
   };
 
   return (

@@ -60,7 +60,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
 
   const [{ isDragging }, drag] = useDrag({
     type: 'item',
-    item: { id: item.id, columnId },
+    item: { id: item.id, columnId, position: item.position },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),

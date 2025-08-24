@@ -423,6 +423,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, onSave, onCa
             estimated_time: estimatedTime ? parseFloat(estimatedTime) : null,
             actual_time: actualTime ? parseFloat(actualTime) : 0,
             column_id: columnId,
+            project_id: projectId,
             position: nextPosition,
           })
           .select()

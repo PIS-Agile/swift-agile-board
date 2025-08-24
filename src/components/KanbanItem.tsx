@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ItemDialog } from './ItemDialog';
 import { toast } from '@/hooks/use-toast';
-import { Clock, User, Edit3, Trash2 } from 'lucide-react';
+import { Clock, User, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -47,6 +48,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
   const [isHovered, setIsHovered] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const [{ isDragging }, drag] = useDrag({
     type: 'item',
@@ -102,26 +104,34 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
         <div className="flex items-start justify-between mb-2">
           <h4 className="font-medium text-sm flex-1 pr-2">{item.name}</h4>
           {isHovered && (
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={() => setEditDialogOpen(true)}
-                title="Edit item"
-              >
-                <Edit3 className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                onClick={() => setDeleteDialogOpen(true)}
-                title="Delete item"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex-shrink-0">
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setEditDialogOpen(true);
+                    setDropdownOpen(false);
+                  }}
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Edit Item
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => {
+                    setDeleteDialogOpen(true);
+                    setDropdownOpen(false);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Item
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
 

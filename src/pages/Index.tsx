@@ -106,11 +106,11 @@ const Index = () => {
   useEffect(() => {
     if (!user || !selectedProjectId) return;
 
-    console.log('Setting up real-time subscriptions for project:', selectedProjectId);
+    let mounted = true;
 
     // Subscribe to all changes for this project
     const channel = supabase
-      .channel(`project-${selectedProjectId}`)
+      .channel(`project-${selectedProjectId}-${Date.now()}`) // Add timestamp to ensure unique channel
       .on(
         'postgres_changes',
         {
@@ -118,9 +118,12 @@ const Index = () => {
           schema: 'public',
           table: 'items'
         },
-        (payload) => {
-          console.log('Items change received:', payload);
-          fetchItems();
+        async () => {
+          if (!mounted) return;
+          // Small delay to avoid race conditions
+          setTimeout(() => {
+            if (mounted) fetchItems();
+          }, 100);
         }
       )
       .on(
@@ -131,10 +134,14 @@ const Index = () => {
           table: 'columns',
           filter: `project_id=eq.${selectedProjectId}`
         },
-        (payload) => {
-          console.log('Columns change received:', payload);
-          fetchColumns();
-          fetchItems(); // Also refresh items when columns change
+        () => {
+          if (!mounted) return;
+          setTimeout(() => {
+            if (mounted) {
+              fetchColumns();
+              fetchItems();
+            }
+          }, 100);
         }
       )
       .on(
@@ -144,17 +151,21 @@ const Index = () => {
           schema: 'public',
           table: 'item_assignments'
         },
-        (payload) => {
-          console.log('Assignments change received:', payload);
-          fetchItems();
+        () => {
+          if (!mounted) return;
+          setTimeout(() => {
+            if (mounted) fetchItems();
+          }, 100);
         }
       )
       .subscribe((status) => {
-        console.log('Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('Real-time subscription active for project:', selectedProjectId);
+        }
       });
 
     return () => {
-      console.log('Cleaning up real-time subscription');
+      mounted = false;
       supabase.removeChannel(channel);
     };
   }, [user, selectedProjectId]);
@@ -240,8 +251,16 @@ const Index = () => {
   };
 
   const fetchItems = async () => {
-    // Don't try to fetch items if there are no columns yet
-    if (columns.length === 0) {
+    // First get columns for this project to ensure we have the latest data
+    const { data: columnsData, error: columnsError } = await supabase
+      .from('columns')
+      .select('id')
+      .eq('project_id', selectedProjectId);
+
+    if (columnsError) throw columnsError;
+
+    // If no columns, set items to empty
+    if (!columnsData || columnsData.length === 0) {
       setItems([]);
       return;
     }
@@ -259,7 +278,7 @@ const Index = () => {
           )
         )
       `)
-      .in('column_id', columns.map(col => col.id))
+      .in('column_id', columnsData.map(col => col.id))
       .order('position', { ascending: true });
 
     if (error) throw error;
@@ -315,12 +334,30 @@ const Index = () => {
   };
 
   const handleItemUpdate = async () => {
-    await fetchItems();
+    try {
+      await fetchItems();
+    } catch (error: any) {
+      console.error('Error updating items:', error);
+      toast({
+        title: "Error updating items",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const handleColumnUpdate = async () => {
-    await fetchColumns();
-    await fetchItems(); // Refresh items too in case column was deleted
+    try {
+      await fetchColumns();
+      await fetchItems(); // Refresh items too in case column was deleted
+    } catch (error: any) {
+      console.error('Error updating columns:', error);
+      toast({
+        title: "Error updating columns",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {

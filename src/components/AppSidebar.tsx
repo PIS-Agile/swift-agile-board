@@ -19,7 +19,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { Trello, Plus, FolderKanban, LogOut, User, Edit3, Trash2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Trello, Plus, FolderKanban, LogOut, User, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -50,6 +51,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDescription, setEditProjectDescription] = useState('');
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const { state } = useSidebar();
   const navigate = useNavigate();
 
@@ -291,32 +293,44 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                       {!isCollapsed && <span>{project.name}</span>}
                     </SidebarMenuButton>
                     {!isCollapsed && hoveredProjectId === project.id && project.id !== '00000000-0000-0000-0000-000000000001' && (
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            startEditProject(project);
-                          }}
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
-                              handleDeleteProject(project.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      <DropdownMenu 
+                        open={openDropdownId === project.id} 
+                        onOpenChange={(open) => setOpenDropdownId(open ? project.id : null)}
+                      >
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              startEditProject(project);
+                              setOpenDropdownId(null);
+                            }}
+                          >
+                            <Edit3 className="h-4 w-4 mr-2" />
+                            Edit Project
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => {
+                              if (confirm(`Are you sure you want to delete "${project.name}"? This will permanently delete all columns and items in this project.`)) {
+                                handleDeleteProject(project.id);
+                              }
+                              setOpenDropdownId(null);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Project
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </div>
                 </SidebarMenuItem>

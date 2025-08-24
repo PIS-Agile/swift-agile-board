@@ -346,7 +346,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
                       {!isCollapsed && <span>New Project</span>}
                     </SidebarMenuButton>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                       <DialogTitle>Create New Project</DialogTitle>
                     </DialogHeader>
@@ -418,7 +418,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
       </SidebarFooter>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
           </DialogHeader>

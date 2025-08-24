@@ -244,7 +244,7 @@ export function KanbanColumn({ column, items, profiles, projectId, onItemUpdate,
             Add item
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Create New Item</DialogTitle>
           </DialogHeader>

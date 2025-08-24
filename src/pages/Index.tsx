@@ -485,7 +485,7 @@ const Index = () => {
                       Add Column
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                       <DialogTitle>Create New Column</DialogTitle>
                     </DialogHeader>

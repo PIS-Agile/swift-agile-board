@@ -131,7 +131,7 @@ export function CustomFieldsDialog({ projectId, open, onOpenChange }: CustomFiel
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-[750px]">
         <DialogHeader>
           <DialogTitle>Manage Custom Fields</DialogTitle>
         </DialogHeader>

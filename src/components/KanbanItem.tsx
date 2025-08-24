@@ -100,8 +100,13 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't open edit dialog if clicking on dropdown button, if dragging, or if dialog is already open
-    if (!isDragging && !editDialogOpen && !deleteDialogOpen && !(e.target as HTMLElement).closest('button')) {
+    // Don't open edit dialog if clicking on dropdown menu or buttons
+    const target = e.target as HTMLElement;
+    const isDropdownClick = target.closest('[role="menu"]') || 
+                           target.closest('[role="menuitem"]') || 
+                           target.closest('button');
+    
+    if (!isDragging && !editDialogOpen && !deleteDialogOpen && !isDropdownClick) {
       e.stopPropagation();
       // Small delay to prevent reopening when dialog is closing
       setTimeout(() => setEditDialogOpen(true), 0);
@@ -241,7 +246,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
       </CardContent>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>

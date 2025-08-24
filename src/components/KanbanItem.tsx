@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ItemDialog } from './ItemDialog';
+import { ItemDialogV2 } from './ItemDialogV2';
 import { toast } from '@/hooks/use-toast';
 import { Clock, User, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
 
@@ -247,12 +247,12 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-hidden flex flex-col sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent className="max-h-[90vh] max-w-6xl overflow-hidden flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>Edit Item</DialogTitle>
           </DialogHeader>
-          <div className="overflow-y-auto flex-1 px-1">
-            <ItemDialog
+          <div className="flex-1 overflow-hidden">
+            <ItemDialogV2
               item={item}
               columnId={columnId}
               projectId={projectId}

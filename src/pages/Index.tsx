@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
-import { CustomFieldsDialog } from '@/components/CustomFieldsDialog';
+import { CustomFieldsDialogV2 } from '@/components/CustomFieldsDialogV2';
 import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDialog, FilterCriteria } from '@/components/FilterDialog';
 import { TestDropdown } from '@/components/TestDropdown';
@@ -699,7 +699,7 @@ const Index = () => {
           </main>
         </div>
 
-        <CustomFieldsDialog
+        <CustomFieldsDialogV2
           projectId={selectedProjectId}
           open={customFieldsDialogOpen}
           onOpenChange={setCustomFieldsDialogOpen}

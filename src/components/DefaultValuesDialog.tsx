@@ -12,7 +12,7 @@ import { Save, Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, H
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
-import Underline from '@tiptap/extension-underline';
+import UnderlineExtension from '@tiptap/extension-underline';
 
 interface Profile {
   id: string;
@@ -186,7 +186,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
           levels: [1, 2, 3],
         },
       }),
-      Underline,
+      UnderlineExtension,
       Placeholder.configure({
         placeholder: 'Enter default description...',
       }),

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -87,6 +87,25 @@ const Index = () => {
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const [isEditingItem, setIsEditingItem] = useState(false); // Track if any item dialog is open
   const navigate = useNavigate();
+  
+  // Track if this is the initial load
+  const isInitialLoadRef = useRef(true);
+  
+  // Use ref to track dialog states for loading prevention
+  const dialogStatesRef = useRef({
+    customFields: false,
+    defaultValues: false,
+    editingItem: false,
+    newColumn: false
+  });
+
+  // Update ref when dialog states change
+  useEffect(() => {
+    dialogStatesRef.current.customFields = customFieldsDialogOpen;
+    dialogStatesRef.current.defaultValues = defaultValuesDialogOpen;
+    dialogStatesRef.current.editingItem = isEditingItem;
+    dialogStatesRef.current.newColumn = newColumnDialogOpen;
+  }, [customFieldsDialogOpen, defaultValuesDialogOpen, isEditingItem, newColumnDialogOpen]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -255,11 +274,20 @@ const Index = () => {
 
   useEffect(() => {
     if (user && selectedProjectId) {
-      // Don't set loading if we're editing an item or have dialogs open
-      const hasOpenDialogs = customFieldsDialogOpen || defaultValuesDialogOpen || isEditingItem;
-      if (!hasOpenDialogs) {
+      // Check if any dialog is open using the ref
+      const hasOpenDialogs = 
+        dialogStatesRef.current.customFields || 
+        dialogStatesRef.current.defaultValues || 
+        dialogStatesRef.current.editingItem ||
+        dialogStatesRef.current.newColumn;
+      
+      // Always show loading on initial load, but not when dialogs are open
+      if (isInitialLoadRef.current || !hasOpenDialogs) {
         setLoading(true);
-        fetchData().finally(() => setLoading(false));
+        fetchData().finally(() => {
+          setLoading(false);
+          isInitialLoadRef.current = false;
+        });
       } else {
         // Still fetch data but don't show loading screen
         fetchData();
@@ -536,7 +564,14 @@ const Index = () => {
         <div className="min-h-screen flex w-full bg-background">
           <AppSidebar 
             selectedProjectId={selectedProjectId}
-            onProjectSelect={setSelectedProjectId}
+            onProjectSelect={(projectId) => {
+              // Close all dialogs when switching projects
+              setCustomFieldsDialogOpen(false);
+              setDefaultValuesDialogOpen(false);
+              setNewColumnDialogOpen(false);
+              setIsEditingItem(false);
+              setSelectedProjectId(projectId);
+            }}
             onSyncClick={resetConnection}
           />
           

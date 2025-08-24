@@ -117,9 +117,9 @@ const Index = () => {
 
     let mounted = true;
 
-    // Subscribe to all changes for this project
+    // Subscribe to all changes for this project - use consistent channel name across clients
     const channel = supabase
-      .channel(`project-${selectedProjectId}-${Date.now()}`) // Add timestamp to ensure unique channel
+      .channel(`project-${selectedProjectId}`) // Remove timestamp to share channel across clients
       .on(
         'postgres_changes',
         {
@@ -127,7 +127,8 @@ const Index = () => {
           schema: 'public',
           table: 'items'
         },
-        async () => {
+        async (payload) => {
+          console.log('Items change detected:', payload);
           if (!mounted) return;
           // Small delay to avoid race conditions
           setTimeout(() => {
@@ -143,7 +144,8 @@ const Index = () => {
           table: 'columns',
           filter: `project_id=eq.${selectedProjectId}`
         },
-        () => {
+        (payload) => {
+          console.log('Columns change detected:', payload);
           if (!mounted) return;
           setTimeout(() => {
             if (mounted) {
@@ -160,17 +162,63 @@ const Index = () => {
           schema: 'public',
           table: 'item_assignments'
         },
-        () => {
+        (payload) => {
+          console.log('Item assignments change detected:', payload);
           if (!mounted) return;
           setTimeout(() => {
             if (mounted) fetchItems();
           }, 100);
         }
       )
-      .subscribe();
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'item_field_values'
+        },
+        (payload) => {
+          console.log('Custom field values change detected:', payload);
+          if (!mounted) return;
+          setTimeout(() => {
+            if (mounted) fetchItems();
+          }, 100);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'custom_fields',
+          filter: `project_id=eq.${selectedProjectId}`
+        },
+        (payload) => {
+          console.log('Custom fields change detected:', payload);
+          if (!mounted) return;
+          setTimeout(() => {
+            if (mounted) fetchItems(); // Refresh items to get updated field definitions
+          }, 100);
+        }
+      )
+      .subscribe((status, err) => {
+        console.log('Subscription status:', status);
+        if (err) {
+          console.error('Subscription error:', err);
+          toast({
+            title: "Real-time connection issue",
+            description: "Live updates may not work. Please refresh if needed.",
+            variant: "destructive",
+          });
+        }
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to project ${selectedProjectId} changes`);
+        }
+      });
 
     return () => {
       mounted = false;
+      console.log('Cleaning up subscription for project:', selectedProjectId);
       supabase.removeChannel(channel);
     };
   }, [user, selectedProjectId]);

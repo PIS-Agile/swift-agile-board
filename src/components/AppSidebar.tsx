@@ -71,11 +71,14 @@ export function AppSidebar({ selectedProjectId, onProjectSelect }: AppSidebarPro
           schema: 'public',
           table: 'projects'
         },
-        () => {
+        (payload) => {
+          console.log('Project change detected:', payload);
           fetchProjects();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Projects subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(projectsChannel);

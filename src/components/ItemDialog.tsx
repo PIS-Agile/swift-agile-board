@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
-import { Check, X, Users } from 'lucide-react';
+import { Check, X, Users, Calendar } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -31,6 +32,18 @@ interface Profile {
   email: string | null;
 }
 
+interface CustomField {
+  id: string;
+  name: string;
+  field_type: 'text' | 'number' | 'date' | 'select' | 'multiselect';
+  options?: string[];
+}
+
+interface CustomFieldValue {
+  field_id: string;
+  value: any;
+}
+
 interface ItemDialogProps {
   item?: Item;
   columnId: string;
@@ -50,6 +63,55 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
   );
   const [assigneePopoverOpen, setAssigneePopoverOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    fetchCustomFields();
+    if (item) {
+      fetchCustomFieldValues();
+    }
+  }, [projectId, item]);
+
+  const fetchCustomFields = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('custom_fields')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      
+      setCustomFields(data.map(field => ({
+        ...field,
+        options: field.options ? field.options as string[] : undefined
+      })));
+    } catch (error: any) {
+      console.error('Error fetching custom fields:', error);
+    }
+  };
+
+  const fetchCustomFieldValues = async () => {
+    if (!item) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('item_custom_field_values')
+        .select('*')
+        .eq('item_id', item.id);
+
+      if (error) throw error;
+      
+      const values: Record<string, any> = {};
+      data.forEach(fieldValue => {
+        values[fieldValue.field_id] = fieldValue.value;
+      });
+      setCustomFieldValues(values);
+    } catch (error: any) {
+      console.error('Error fetching custom field values:', error);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +181,29 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
           .insert(assignments);
 
         if (assignmentError) throw assignmentError;
+      }
+
+      // Update custom field values
+      // First, remove all existing custom field values
+      await supabase
+        .from('item_custom_field_values')
+        .delete()
+        .eq('item_id', itemId);
+
+      // Then, add new custom field values
+      const customFieldEntries = Object.entries(customFieldValues).filter(([_, value]) => value !== null && value !== '' && value !== undefined);
+      if (customFieldEntries.length > 0) {
+        const fieldValues = customFieldEntries.map(([fieldId, value]) => ({
+          item_id: itemId,
+          field_id: fieldId,
+          value: value,
+        }));
+
+        const { error: customFieldError } = await supabase
+          .from('item_custom_field_values')
+          .insert(fieldValues);
+
+        if (customFieldError) throw customFieldError;
       }
 
       toast({
@@ -273,6 +358,129 @@ export function ItemDialog({ item, columnId, projectId, profiles, onSave, onCanc
           </Popover>
         </div>
       </div>
+
+      {/* Custom Fields */}
+      {customFields.length > 0 && (
+        <div className="space-y-4 border-t pt-4">
+          <h4 className="text-sm font-medium">Custom Fields</h4>
+          {customFields.map((field) => (
+            <div key={field.id} className="space-y-2">
+              <Label htmlFor={`custom-${field.id}`}>{field.name}</Label>
+              
+              {field.field_type === 'text' && (
+                <Input
+                  id={`custom-${field.id}`}
+                  type="text"
+                  value={customFieldValues[field.id] || ''}
+                  onChange={(e) => setCustomFieldValues(prev => ({
+                    ...prev,
+                    [field.id]: e.target.value
+                  }))}
+                  placeholder={`Enter ${field.name.toLowerCase()}`}
+                />
+              )}
+              
+              {field.field_type === 'number' && (
+                <Input
+                  id={`custom-${field.id}`}
+                  type="number"
+                  value={customFieldValues[field.id] || ''}
+                  onChange={(e) => setCustomFieldValues(prev => ({
+                    ...prev,
+                    [field.id]: e.target.value ? parseFloat(e.target.value) : null
+                  }))}
+                  placeholder="0"
+                />
+              )}
+              
+              {field.field_type === 'date' && (
+                <Input
+                  id={`custom-${field.id}`}
+                  type="date"
+                  value={customFieldValues[field.id] || ''}
+                  onChange={(e) => setCustomFieldValues(prev => ({
+                    ...prev,
+                    [field.id]: e.target.value
+                  }))}
+                />
+              )}
+              
+              {field.field_type === 'select' && field.options && (
+                <Select
+                  value={customFieldValues[field.id] || ''}
+                  onValueChange={(value) => setCustomFieldValues(prev => ({
+                    ...prev,
+                    [field.id]: value
+                  }))}
+                >
+                  <SelectTrigger id={`custom-${field.id}`}>
+                    <SelectValue placeholder={`Select ${field.name.toLowerCase()}`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {field.field_type === 'multiselect' && field.options && (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {(customFieldValues[field.id] || []).map((value: string) => (
+                      <Badge key={value} variant="secondary" className="pr-1">
+                        {value}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto p-0 ml-2 hover:bg-transparent"
+                          onClick={() => {
+                            const currentValues = customFieldValues[field.id] || [];
+                            setCustomFieldValues(prev => ({
+                              ...prev,
+                              [field.id]: currentValues.filter((v: string) => v !== value)
+                            }));
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <Select
+                    value=""
+                    onValueChange={(value) => {
+                      const currentValues = customFieldValues[field.id] || [];
+                      if (!currentValues.includes(value)) {
+                        setCustomFieldValues(prev => ({
+                          ...prev,
+                          [field.id]: [...currentValues, value]
+                        }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Add ${field.name.toLowerCase()}`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {field.options
+                        .filter(option => !(customFieldValues[field.id] || []).includes(option))
+                        .map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>

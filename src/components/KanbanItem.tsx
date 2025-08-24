@@ -28,6 +28,14 @@ interface Item {
       email: string | null;
     };
   }>;
+  custom_field_values?: Array<{
+    field_id: string;
+    value: any;
+    custom_fields: {
+      name: string;
+      field_type: string;
+    };
+  }>;
 }
 
 interface Profile {
@@ -91,6 +99,14 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
       .slice(0, 2);
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open edit dialog if clicking on dropdown button, if dragging, or if dialog is already open
+    if (!isDragging && !editDialogOpen && !deleteDialogOpen && !(e.target as HTMLElement).closest('button')) {
+      e.stopPropagation();
+      setEditDialogOpen(true);
+    }
+  };
+
   return (
     <Card
       ref={drag}
@@ -99,12 +115,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, onUpdate }: Ka
       }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={(e) => {
-        // Don't open edit dialog if clicking on dropdown button or if dragging
-        if (!isDragging && !(e.target as HTMLElement).closest('button')) {
-          setEditDialogOpen(true);
-        }
-      }}
+      onClick={handleCardClick}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-2">

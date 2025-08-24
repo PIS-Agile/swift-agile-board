@@ -42,6 +42,14 @@ interface Item {
       email: string | null;
     };
   }>;
+  custom_field_values?: Array<{
+    field_id: string;
+    value: any;
+    custom_fields: {
+      name: string;
+      field_type: string;
+    };
+  }>;
 }
 
 interface Profile {
@@ -238,6 +246,14 @@ const Index = () => {
             full_name,
             email
           )
+        ),
+        custom_field_values:item_custom_field_values(
+          field_id,
+          value,
+          custom_fields!item_custom_field_values_field_id_fkey(
+            name,
+            field_type
+          )
         )
       `)
       .in('column_id', columnsData.map(col => col.id))
@@ -272,6 +288,14 @@ const Index = () => {
             id,
             full_name,
             email
+          )
+        ),
+        custom_field_values:item_custom_field_values(
+          field_id,
+          value,
+          custom_fields!item_custom_field_values_field_id_fkey(
+            name,
+            field_type
           )
         )
       `)

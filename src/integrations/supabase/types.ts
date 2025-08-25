@@ -168,6 +168,7 @@ export type Database = {
           description: string | null
           estimated_time: number | null
           id: string
+          item_id: number | null
           name: string
           position: number
           project_id: string | null
@@ -181,6 +182,7 @@ export type Database = {
           description?: string | null
           estimated_time?: number | null
           id?: string
+          item_id?: number | null
           name: string
           position?: number
           project_id?: string | null
@@ -194,6 +196,7 @@ export type Database = {
           description?: string | null
           estimated_time?: number | null
           id?: string
+          item_id?: number | null
           name?: string
           position?: number
           project_id?: string | null
@@ -219,6 +222,87 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      item_comments: {
+        Row: {
+          id: string
+          item_id: string
+          user_id: string
+          content: string
+          is_resolved: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          item_id: string
+          user_id: string
+          content: string
+          is_resolved?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          item_id?: string
+          user_id?: string
+          content?: string
+          is_resolved?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_mentions: {
+        Row: {
+          id: string
+          comment_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          comment_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          comment_id?: string
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "item_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

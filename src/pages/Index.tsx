@@ -19,7 +19,7 @@ import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { useRealtimeWithReset } from '@/hooks/useRealtimeWithReset';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Menu, Settings2, FileText } from 'lucide-react';
+import { Plus, Menu, Settings2, FileText, AtSign } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface Column {
@@ -57,6 +57,8 @@ interface Item {
       field_type: string;
     };
   }>;
+  comment_count?: number;
+  has_user_mentions?: boolean;
 }
 
 interface Profile {
@@ -90,6 +92,7 @@ const Index = () => {
   const [isEditingItem, setIsEditingItem] = useState(false); // Track if any item dialog is open
   const [sharedItemId, setSharedItemId] = useState<string | null>(null);
   const [sharedItem, setSharedItem] = useState<Item | null>(null);
+  const [userHasMentions, setUserHasMentions] = useState(false);
   const navigate = useNavigate();
   const { itemId } = useParams();
   
@@ -198,7 +201,7 @@ const Index = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data: itemsData, error } = await supabase
         .from('items')
         .select(`
           *,
@@ -224,12 +227,55 @@ const Index = () => {
         .order('position', { ascending: true });
 
       if (error) throw error;
-      console.log('📦 Fetched items:', data?.length || 0);
-      // Debug: Check if item_id is included
-      if (data && data.length > 0) {
-        console.log('First item data:', data[0]);
+
+      // Fetch comment counts and mention status for all items
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (itemsData && itemsData.length > 0 && currentUser) {
+        const itemIds = itemsData.map(item => item.id);
+        
+        // Get comment counts
+        const { data: commentCounts } = await supabase
+          .from('item_comments')
+          .select('item_id')
+          .in('item_id', itemIds);
+
+        // Get items where current user is mentioned
+        const { data: mentionedItems } = await supabase
+          .from('comment_mentions')
+          .select('comment_id, item_comments!inner(item_id)')
+          .eq('user_id', currentUser.id);
+
+        // Create maps for quick lookup
+        const commentCountMap = commentCounts?.reduce((acc, comment) => {
+          acc[comment.item_id] = (acc[comment.item_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>) || {};
+
+        const mentionedItemIds = new Set(
+          mentionedItems?.map(m => (m as any).item_comments.item_id) || []
+        );
+
+        // Add comment counts and mention status to items
+        const data = itemsData.map(item => ({
+          ...item,
+          comment_count: commentCountMap[item.id] || 0,
+          has_user_mentions: mentionedItemIds.has(item.id)
+        }));
+
+        // Check if user has any mentions
+        const hasMentions = data.some(item => item.has_user_mentions);
+        setUserHasMentions(hasMentions);
+
+        console.log('📦 Fetched items with comments:', data?.length || 0);
+        // Debug: Check if item_id is included
+        if (data && data.length > 0) {
+          console.log('First item data:', data[0]);
+        }
+        setItems(data || []);
+        return;
       }
-      setItems(data || []);
+
+      setItems(itemsData || []);
     } catch (error) {
       console.error('Error fetching items:', error);
     }
@@ -496,6 +542,11 @@ const Index = () => {
       );
     }
 
+    // Filter by mentions
+    if (filters.mentionsMe) {
+      filtered = filtered.filter(item => item.has_user_mentions === true);
+    }
+
     // Filter by columns
     if (filters.columns && filters.columns.length > 0) {
       filtered = filtered.filter(item => 
@@ -691,6 +742,25 @@ const Index = () => {
                     )}
                     
                     <div className="flex gap-2">
+                      {userHasMentions && (
+                        <Button
+                          size="sm"
+                          variant={filters.mentionsMe ? "default" : "outline"}
+                          onClick={() => {
+                            const newFilters = { ...filters, mentionsMe: !filters.mentionsMe };
+                            setFilters(newFilters);
+                            handleApplyFilters(newFilters);
+                          }}
+                          className="relative"
+                        >
+                          <AtSign className="h-4 w-4 mr-2" />
+                          Mentions
+                          {!filters.mentionsMe && (
+                            <span className="absolute -top-1 -right-1 h-2 w-2 bg-green-600 rounded-full animate-pulse" />
+                          )}
+                        </Button>
+                      )}
+                      
                       <FilterDropdown
                         projectId={selectedProjectId}
                         onApplyFilters={handleApplyFilters}

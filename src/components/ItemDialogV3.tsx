@@ -18,8 +18,9 @@ import Link from '@tiptap/extension-link';
 import { 
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
   Heading1, Heading2, Heading3, Minus, Clock, Users, Calendar, 
-  Hash, Type, FileText, User, Undo, Redo, Link2, Share2, Check 
+  Hash, Type, FileText, User, Undo, Redo, Link2, Share2, Check, MessageSquare 
 } from 'lucide-react';
+import { ItemComments } from '@/components/ItemComments';
 
 interface Item {
   id: string;
@@ -261,6 +262,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   const [showCopied, setShowCopied] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   // Initialize rich text editor with all extensions
   const editor = useEditor({
@@ -296,12 +298,18 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
 
   useEffect(() => {
     fetchCustomFields();
+    fetchCurrentUser();
     if (item) {
       fetchCustomFieldValues();
     } else {
       fetchDefaultValues();
     }
   }, [projectId, item]);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) setCurrentUserId(user.id);
+  };
 
   const fetchCustomFields = async () => {
     try {
@@ -773,9 +781,29 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
 
   return (
     <form onSubmit={handleSave} className="h-full flex flex-col overflow-hidden">
-      {/* Main content area with two panels */}
+      {/* Main content area with three panels */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Name & Description */}
+        {/* Left Panel - Comments */}
+        <div className="w-[350px] bg-muted/30 border-r overflow-hidden flex flex-col">
+          <div className="p-4 flex-1 overflow-hidden">
+            {item && currentUserId && (
+              <ItemComments
+                itemId={item.id}
+                currentUserId={currentUserId}
+                profiles={profiles}
+                readOnly={readOnly}
+              />
+            )}
+            {!item && (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mb-4" />
+                <p className="text-sm text-center">Comments will be available<br />after creating the item</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Middle Panel - Name & Description */}
         <div className="flex-1 flex flex-col border-r overflow-hidden">
           <div className="p-6 pb-3 flex-shrink-0">
             <div className="flex items-start gap-2">

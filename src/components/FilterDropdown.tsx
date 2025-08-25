@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/popover';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
 import { toast } from '@/hooks/use-toast';
-import { Filter, X, RotateCcw, Search } from 'lucide-react';
+import { Filter, X, RotateCcw, Search, AtSign } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -45,6 +45,7 @@ export interface FilterCriteria {
   itemNumber?: number | null;
   columns?: string[];
   customFields?: Record<string, any>;
+  mentionsMe?: boolean;
 }
 
 interface FilterDropdownProps {
@@ -87,6 +88,7 @@ export function FilterDropdown({
     if (filters.actualTimeMax !== null && filters.actualTimeMax !== undefined) count++;
     if (filters.assignedUsers && filters.assignedUsers.length > 0) count++;
     if (filters.itemNumber !== null && filters.itemNumber !== undefined) count++;
+    if (filters.mentionsMe) count++;
     if (filters.columns && filters.columns.length > 0) count++;
     if (filters.customFields) {
       Object.values(filters.customFields).forEach(value => {
@@ -143,6 +145,7 @@ export function FilterDropdown({
       actualTimeMax: null,
       assignedUsers: [],
       itemNumber: null,
+      mentionsMe: false,
       columns: [],
       customFields: {}
     };

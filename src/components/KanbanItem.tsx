@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ItemDialogV3 } from './ItemDialogV3';
 import { toast } from '@/hooks/use-toast';
-import { Clock, User, Edit3, Trash2, MoreHorizontal } from 'lucide-react';
+import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -38,6 +38,8 @@ interface Item {
       show_in_preview?: boolean;
     };
   }>;
+  comment_count?: number;
+  has_user_mentions?: boolean;
 }
 
 interface Profile {
@@ -164,6 +166,14 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
         </div>
 
         <div className="space-y-2">
+          {/* Comments indicator */}
+          {item.comment_count !== undefined && item.comment_count > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MessageSquare className="h-3 w-3" />
+              <span>{item.comment_count} {item.comment_count === 1 ? 'comment' : 'comments'}</span>
+            </div>
+          )}
+
           {(item.estimated_time || item.actual_time > 0) && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />

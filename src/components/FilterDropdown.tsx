@@ -42,6 +42,7 @@ export interface FilterCriteria {
   actualTimeMin?: number | null;
   actualTimeMax?: number | null;
   assignedUsers?: string[];
+  itemNumber?: number | null;
   columns?: string[];
   customFields?: Record<string, any>;
 }
@@ -85,6 +86,7 @@ export function FilterDropdown({
     if (filters.actualTimeMin !== null && filters.actualTimeMin !== undefined) count++;
     if (filters.actualTimeMax !== null && filters.actualTimeMax !== undefined) count++;
     if (filters.assignedUsers && filters.assignedUsers.length > 0) count++;
+    if (filters.itemNumber !== null && filters.itemNumber !== undefined) count++;
     if (filters.columns && filters.columns.length > 0) count++;
     if (filters.customFields) {
       Object.values(filters.customFields).forEach(value => {
@@ -140,6 +142,7 @@ export function FilterDropdown({
       actualTimeMin: null,
       actualTimeMax: null,
       assignedUsers: [],
+      itemNumber: null,
       columns: [],
       customFields: {}
     };
@@ -350,6 +353,21 @@ export function FilterDropdown({
                   onChange={(newValues) => setFilters({ ...filters, assignedUsers: newValues })}
                   placeholder="Select users..."
                   searchPlaceholder="Search users..."
+                />
+              </div>
+
+              {/* Item Number - RIGHT BELOW ASSIGNED USERS */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Item Number</Label>
+                <Input
+                  type="number"
+                  value={filters.itemNumber || ''}
+                  onChange={(e) => setFilters({ 
+                    ...filters, 
+                    itemNumber: e.target.value ? parseInt(e.target.value) : null 
+                  })}
+                  placeholder="Exact item number"
+                  className="h-9"
                 />
               </div>
 

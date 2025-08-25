@@ -489,6 +489,13 @@ const Index = () => {
       });
     }
 
+    // Filter by item number (exact match)
+    if (filters.itemNumber !== null && filters.itemNumber !== undefined) {
+      filtered = filtered.filter(item => 
+        item.item_id === filters.itemNumber
+      );
+    }
+
     // Filter by columns
     if (filters.columns && filters.columns.length > 0) {
       filtered = filtered.filter(item => 

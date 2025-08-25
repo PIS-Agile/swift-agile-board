@@ -11,6 +11,17 @@
   outline: none;
 }
 
+/* Links */
+.ProseMirror a {
+  color: rgb(34 197 94); /* green-500 */
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror a:hover {
+  color: rgb(22 163 74); /* green-600 */
+}
+
 /* Lists */
 .ProseMirror ul {
   list-style-type: disc;

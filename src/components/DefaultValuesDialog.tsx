@@ -8,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Undo, Redo } from 'lucide-react';
+import { Save, Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Undo, Redo, Link2 } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import UnderlineExtension from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
 
 interface Profile {
   id: string;
@@ -60,6 +61,22 @@ function EditorToolbar({ editor }: { editor: any }) {
   }, [editor]);
   
   if (!editor) return null;
+  
+  const setLink = () => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('Enter URL:', previousUrl);
+    
+    if (url === null) {
+      return;
+    }
+    
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
 
   return (
     <div className="border-b border-border bg-muted/30 p-2 flex items-center gap-1 flex-wrap">
@@ -93,6 +110,17 @@ function EditorToolbar({ editor }: { editor: any }) {
           data-active={editor.isActive('underline')}
         >
           <Underline className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={setLink}
+          data-active={editor.isActive('link')}
+          title="Add link"
+        >
+          <Link2 className="h-4 w-4" />
         </Button>
       </div>
       
@@ -211,6 +239,16 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
         },
       }),
       UnderlineExtension,
+      Link.configure({
+        openOnClick: true,
+        autolink: true,
+        defaultProtocol: 'https',
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer nofollow',
+          class: 'text-green-600 hover:text-green-700 underline cursor-pointer',
+        },
+      }),
       Placeholder.configure({
         placeholder: 'Enter default description...',
       }),

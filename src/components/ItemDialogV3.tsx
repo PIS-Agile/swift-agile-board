@@ -14,10 +14,11 @@ import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
 import { 
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
   Heading1, Heading2, Heading3, Minus, Clock, Users, Calendar, 
-  Hash, Type, FileText, User, Undo, Redo 
+  Hash, Type, FileText, User, Undo, Redo, Link2 
 } from 'lucide-react';
 
 interface Item {
@@ -88,6 +89,22 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
   }, [editor]);
   
   if (!editor) return null;
+  
+  const setLink = () => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('Enter URL:', previousUrl);
+    
+    if (url === null) {
+      return;
+    }
+    
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
 
   return (
     <div className="flex items-center gap-1 p-2 border-b flex-wrap">
@@ -152,6 +169,16 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <UnderlineIcon className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant={editor.isActive('link') ? 'default' : 'ghost'}
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={setLink}
+          title="Add link"
+        >
+          <Link2 className="h-4 w-4" />
         </Button>
       </div>
 
@@ -242,6 +269,16 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         },
       }),
       Underline,
+      Link.configure({
+        openOnClick: true,
+        autolink: true,
+        defaultProtocol: 'https',
+        HTMLAttributes: {
+          target: '_blank',
+          rel: 'noopener noreferrer nofollow',
+          class: 'text-green-600 hover:text-green-700 underline cursor-pointer',
+        },
+      }),
       Placeholder.configure({
         placeholder: 'Enter item description...',
       }),

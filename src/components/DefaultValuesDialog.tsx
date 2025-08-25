@@ -194,6 +194,12 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
     assigned_to: []
   });
   const [customFieldDefaults, setCustomFieldDefaults] = useState<Record<string, any>>({});
+  const [fieldVisibility, setFieldVisibility] = useState<Record<string, boolean>>({
+    item_id: true,
+    estimated_time: true,
+    actual_time: true,
+    assigned_to: true
+  });
   const [loading, setLoading] = useState(false);
   
   // Initialize rich text editor for description
@@ -276,6 +282,25 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
       
       setProjectDefaults(defaults);
 
+      // Fetch field visibility settings
+      const { data: visibilityData } = await supabase
+        .from('project_field_settings')
+        .select('*')
+        .eq('project_id', projectId);
+
+      const visibility: Record<string, boolean> = {
+        item_id: true,
+        estimated_time: true,
+        actual_time: true,
+        assigned_to: true
+      };
+
+      visibilityData?.forEach(setting => {
+        visibility[setting.field_name] = setting.show_in_preview;
+      });
+
+      setFieldVisibility(visibility);
+
     } catch (error: any) {
       console.error('Error fetching data:', error);
       toast({
@@ -308,6 +333,34 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
         ...projectDefaults,
         description: editor?.getHTML() || ''
       };
+      
+      // Save field visibility settings
+      for (const [fieldName, isVisible] of Object.entries(fieldVisibility)) {
+        const { data: existing } = await supabase
+          .from('project_field_settings')
+          .select('id')
+          .eq('project_id', projectId)
+          .eq('field_name', fieldName)
+          .single();
+
+        if (existing) {
+          await supabase
+            .from('project_field_settings')
+            .update({ 
+              show_in_preview: isVisible,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existing.id);
+        } else {
+          await supabase
+            .from('project_field_settings')
+            .insert({
+              project_id: projectId,
+              field_name: fieldName,
+              show_in_preview: isVisible
+            });
+        }
+      }
       
       // Save each built-in field default
       for (const [fieldName, defaultValue] of Object.entries(updatedDefaults)) {
@@ -534,9 +587,10 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
         </DialogHeader>
         
         <Tabs defaultValue="builtin" className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="builtin">Built-in Fields</TabsTrigger>
             <TabsTrigger value="custom">Custom Fields</TabsTrigger>
+            <TabsTrigger value="visibility">Preview Settings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="builtin" className="flex-1 overflow-y-auto px-1 space-y-4 no-scrollbar">
@@ -649,6 +703,81 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
                 </Button>
               </div>
             )}
+          </TabsContent>
+          
+          <TabsContent value="visibility" className="flex-1 overflow-y-auto px-1 space-y-4 no-scrollbar">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium mb-3">Choose which fields appear in item preview cards:</h3>
+                
+                <div className="space-y-3">
+                  <h4 className="text-xs text-muted-foreground uppercase tracking-wider">Built-in Fields</h4>
+                  
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldVisibility.item_id}
+                        onChange={(e) => setFieldVisibility({
+                          ...fieldVisibility,
+                          item_id: e.target.checked
+                        })}
+                      />
+                      <span className="text-sm">Item ID (#1, #2, etc.)</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldVisibility.estimated_time}
+                        onChange={(e) => setFieldVisibility({
+                          ...fieldVisibility,
+                          estimated_time: e.target.checked
+                        })}
+                      />
+                      <span className="text-sm">Estimated Time</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldVisibility.actual_time}
+                        onChange={(e) => setFieldVisibility({
+                          ...fieldVisibility,
+                          actual_time: e.target.checked
+                        })}
+                      />
+                      <span className="text-sm">Actual Time</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={fieldVisibility.assigned_to}
+                        onChange={(e) => setFieldVisibility({
+                          ...fieldVisibility,
+                          assigned_to: e.target.checked
+                        })}
+                      />
+                      <span className="text-sm">Assigned Users</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div className="pt-4 text-xs text-muted-foreground">
+                  <p>Note: Custom field visibility is controlled in the Custom Fields settings.</p>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={handleSaveBuiltInDefaults} 
+                disabled={loading}
+                className="w-full"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Preview Settings
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

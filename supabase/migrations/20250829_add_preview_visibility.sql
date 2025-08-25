@@ -58,5 +58,4 @@ CREATE TRIGGER update_project_field_settings_updated_at
   BEFORE UPDATE ON project_field_settings 
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Enable realtime for the new table
-ALTER PUBLICATION supabase_realtime ADD TABLE project_field_settings;
+-- Realtime is already enabled for all tables via supabase_realtime publication

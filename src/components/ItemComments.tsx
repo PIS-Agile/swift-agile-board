@@ -345,6 +345,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                         {!readOnly && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
+                              type="button"
                               size="sm"
                               variant="ghost"
                               className="h-6 w-6 p-0"
@@ -358,6 +359,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                               )}
                             </Button>
                             <Button
+                              type="button"
                               size="sm"
                               variant="ghost"
                               className="h-6 w-6 p-0 text-destructive"
@@ -396,6 +398,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                   className="flex-1"
                 />
                 <Button
+                  type="button"
                   size="sm"
                   onClick={handleSubmit}
                   disabled={!newComment.trim() || loading}
@@ -414,6 +417,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                   {filteredProfiles.map((profile) => (
                     <Button
                       key={profile.id}
+                      type="button"
                       variant="ghost"
                       size="sm"
                       className="w-full justify-start text-sm"

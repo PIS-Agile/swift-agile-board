@@ -239,11 +239,12 @@ const Index = () => {
           .select('item_id')
           .in('item_id', itemIds);
 
-        // Get items where current user is mentioned
+        // Get items where current user is mentioned in UNSOLVED comments
         const { data: mentionedItems } = await supabase
           .from('comment_mentions')
-          .select('comment_id, item_comments!inner(item_id)')
-          .eq('user_id', currentUser.id);
+          .select('comment_id, item_comments!inner(item_id, is_resolved)')
+          .eq('user_id', currentUser.id)
+          .eq('item_comments.is_resolved', false);
 
         // Create maps for quick lookup
         const commentCountMap = commentCounts?.reduce((acc, comment) => {
@@ -251,20 +252,21 @@ const Index = () => {
           return acc;
         }, {} as Record<string, number>) || {};
 
-        const mentionedItemIds = new Set(
+        // Get item IDs with unsolved mentions
+        const unsolvedMentionItemIds = new Set(
           mentionedItems?.map(m => (m as any).item_comments.item_id) || []
         );
 
-        // Add comment counts and mention status to items
+        // Add comment counts and unsolved mention status to items
         const data = itemsData.map(item => ({
           ...item,
           comment_count: commentCountMap[item.id] || 0,
-          has_user_mentions: mentionedItemIds.has(item.id)
+          has_user_mentions: unsolvedMentionItemIds.has(item.id)
         }));
 
-        // Check if user has any mentions
-        const hasMentions = data.some(item => item.has_user_mentions);
-        setUserHasMentions(hasMentions);
+        // Check if user has any unsolved mentions
+        const hasUnsolvedMentions = data.some(item => item.has_user_mentions);
+        setUserHasMentions(hasUnsolvedMentions);
 
         console.log('📦 Fetched items with comments:', data?.length || 0);
         // Debug: Check if item_id is included
@@ -542,7 +544,7 @@ const Index = () => {
       );
     }
 
-    // Filter by mentions
+    // Filter by unsolved mentions
     if (filters.mentionsMe) {
       filtered = filtered.filter(item => item.has_user_mentions === true);
     }
@@ -752,6 +754,7 @@ const Index = () => {
                             handleApplyFilters(newFilters);
                           }}
                           className="relative"
+                          title="Show items with unsolved mentions"
                         >
                           <AtSign className="h-4 w-4 mr-2" />
                           Mentions

@@ -190,6 +190,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
   const [projectDefaults, setProjectDefaults] = useState<Record<string, any>>({
     description: '',
     estimated_time: null,
+    actual_time: null,
     assigned_to: []
   });
   const [customFieldDefaults, setCustomFieldDefaults] = useState<Record<string, any>>({});
@@ -265,6 +266,7 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
       const defaults: Record<string, any> = {
         description: '',
         estimated_time: null,
+        actual_time: null,
         assigned_to: []
       };
       
@@ -563,6 +565,22 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
                     estimated_time: e.target.value ? parseFloat(e.target.value) : null
                   })}
                   placeholder="Enter default estimated time"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="default-actual-time">Actual Time (hours)</Label>
+                <Input
+                  id="default-actual-time"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={projectDefaults.actual_time || ''}
+                  onChange={(e) => setProjectDefaults({
+                    ...projectDefaults,
+                    actual_time: e.target.value ? parseFloat(e.target.value) : null
+                  })}
+                  placeholder="Enter default actual time"
                 />
               </div>
               

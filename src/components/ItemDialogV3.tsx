@@ -353,6 +353,9 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
           case 'estimated_time':
             setEstimatedTime(defaultItem.default_value?.toString() || '');
             break;
+          case 'actual_time':
+            setActualTime(defaultItem.default_value?.toString() || '');
+            break;
           case 'assigned_to':
             if (Array.isArray(defaultItem.default_value)) {
               setSelectedUserIds(defaultItem.default_value);

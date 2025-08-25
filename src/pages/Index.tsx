@@ -211,7 +211,8 @@ const Index = () => {
             value,
             custom_fields!item_field_values_field_id_fkey(
               name,
-              field_type
+              field_type,
+              show_in_preview
             )
           )
         `)

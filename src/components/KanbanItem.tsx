@@ -35,6 +35,7 @@ interface Item {
     custom_fields: {
       name: string;
       field_type: string;
+      show_in_preview?: boolean;
     };
   }>;
 }
@@ -91,15 +92,6 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
     }
   };
 
-  const getInitials = (name: string | null) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't open edit dialog if clicking on dropdown menu or buttons
@@ -187,19 +179,19 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
             <div className="flex items-center gap-2">
               <User className="h-3 w-3 text-muted-foreground" />
               <div className="flex gap-1">
-                {item.assignments.slice(0, 3).map((assignment) => (
+                {item.assignments.slice(0, 2).map((assignment) => (
                   <Badge
                     key={assignment.user_id}
                     variant="secondary"
-                    className="text-xs px-1.5 py-0.5 h-auto"
+                    className="text-xs px-1.5 py-0.5 h-auto truncate max-w-[120px]"
                     title={assignment.profiles.full_name || assignment.profiles.email || 'Unknown'}
                   >
-                    {getInitials(assignment.profiles.full_name)}
+                    {assignment.profiles.full_name || assignment.profiles.email || 'Unknown'}
                   </Badge>
                 ))}
-                {item.assignments.length > 3 && (
+                {item.assignments.length > 2 && (
                   <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-auto">
-                    +{item.assignments.length - 3}
+                    +{item.assignments.length - 2}
                   </Badge>
                 )}
               </div>
@@ -209,7 +201,10 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
           {/* Custom Fields Preview */}
           {item.custom_field_values && item.custom_field_values.length > 0 && (
             <div className="space-y-1 pt-1 border-t">
-              {item.custom_field_values.slice(0, 3).map((fieldValue) => {
+              {item.custom_field_values
+                .filter(fv => fv.custom_fields.show_in_preview !== false)
+                .slice(0, 3)
+                .map((fieldValue) => {
                 const value = fieldValue.value;
                 const fieldType = fieldValue.custom_fields.field_type;
                 
@@ -262,9 +257,13 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                   </div>
                 );
               }).filter(Boolean)}
-              {item.custom_field_values.filter(fv => fv.value && fv.value !== '').length > 3 && (
+              {item.custom_field_values.filter(fv => 
+                fv.value && fv.value !== '' && fv.custom_fields.show_in_preview !== false
+              ).length > 3 && (
                 <div className="text-xs text-muted-foreground">
-                  +{item.custom_field_values.filter(fv => fv.value && fv.value !== '').length - 3} more fields
+                  +{item.custom_field_values.filter(fv => 
+                    fv.value && fv.value !== '' && fv.custom_fields.show_in_preview !== false
+                  ).length - 3} more fields
                 </div>
               )}
             </div>

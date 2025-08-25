@@ -21,6 +21,7 @@ interface CustomField {
   options?: string[];
   position: number;
   project_id: string;
+  show_in_preview?: boolean;
   isEditing?: boolean;
   tempName?: string;
   tempType?: string;
@@ -44,7 +45,8 @@ function DraggableField({
   onDelete,
   onTypeChange,
   onNameChange,
-  onOptionsChange
+  onOptionsChange,
+  onShowInPreviewChange
 }: {
   field: CustomField;
   index: number;
@@ -56,6 +58,7 @@ function DraggableField({
   onTypeChange: (id: string, newType: string) => void;
   onNameChange: (id: string, newName: string) => void;
   onOptionsChange: (id: string, newOptions: string) => void;
+  onShowInPreviewChange: (id: string, value: boolean) => void;
 }) {
   const [{ isDragging }, drag, preview] = useDrag({
     type: 'field',
@@ -136,6 +139,19 @@ function DraggableField({
                     />
                   </div>
                 )}
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`preview-${field.id}`}
+                    checked={field.show_in_preview !== false}
+                    onChange={(e) => onShowInPreviewChange(field.id, e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor={`preview-${field.id}`} className="text-sm cursor-pointer">
+                    Show in item preview
+                  </Label>
+                </div>
                 
                 {field.field_type !== field.tempType && (
                   <div className="flex items-start gap-2 p-2 bg-amber-50 dark:bg-amber-950 rounded-md">
@@ -351,7 +367,8 @@ export function CustomFieldsDialogV2({ projectId, open, onOpenChange }: CustomFi
         .update({
           name: field.tempName,
           field_type: field.tempType,
-          options
+          options,
+          show_in_preview: field.show_in_preview
         })
         .eq('id', id);
 
@@ -549,6 +566,11 @@ export function CustomFieldsDialogV2({ projectId, open, onOpenChange }: CustomFi
                   onOptionsChange={(id, newOptions) => {
                     setFields(fields.map(f => 
                       f.id === id ? { ...f, tempOptions: newOptions } : f
+                    ));
+                  }}
+                  onShowInPreviewChange={(id, value) => {
+                    setFields(fields.map(f => 
+                      f.id === id ? { ...f, show_in_preview: value } : f
                     ));
                   }}
                 />

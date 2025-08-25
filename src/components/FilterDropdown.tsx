@@ -198,6 +198,8 @@ export function FilterDropdown({
             <div className="flex gap-2">
               <Input
                 type="number"
+                min="0"
+                step="0.01"
                 value={minValue}
                 onChange={(e) => setFilters({
                   ...filters,
@@ -211,6 +213,8 @@ export function FilterDropdown({
               />
               <Input
                 type="number"
+                min="0"
+                step="0.01"
                 value={maxValue}
                 onChange={(e) => setFilters({
                   ...filters,

@@ -656,6 +656,8 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         return (
           <Input
             type="number"
+            min="0"
+            step="0.01"
             value={value || ''}
             onChange={(e) => setCustomFieldValues({
               ...customFieldValues,

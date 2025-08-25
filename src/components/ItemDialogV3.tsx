@@ -70,6 +70,23 @@ interface ItemDialogV3Props {
 
 // Enhanced Rich text editor toolbar component
 function EditorToolbar({ editor }: { editor: Editor | null }) {
+  const [, forceUpdate] = useState({});
+  
+  useEffect(() => {
+    if (!editor) return;
+    
+    // Force re-render when selection or content changes
+    const updateHandler = () => forceUpdate({});
+    
+    editor.on('selectionUpdate', updateHandler);
+    editor.on('update', updateHandler);
+    
+    return () => {
+      editor.off('selectionUpdate', updateHandler);
+      editor.off('update', updateHandler);
+    };
+  }, [editor]);
+  
   if (!editor) return null;
 
   return (

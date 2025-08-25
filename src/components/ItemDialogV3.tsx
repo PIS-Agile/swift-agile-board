@@ -18,7 +18,7 @@ import Link from '@tiptap/extension-link';
 import { 
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
   Heading1, Heading2, Heading3, Minus, Clock, Users, Calendar, 
-  Hash, Type, FileText, User, Undo, Redo, Link2 
+  Hash, Type, FileText, User, Undo, Redo, Link2, Share2, Check 
 } from 'lucide-react';
 
 interface Item {
@@ -67,6 +67,7 @@ interface ItemDialogV3Props {
   columns?: Column[];
   onSave: () => void;
   onCancel: () => void;
+  readOnly?: boolean;
 }
 
 // Enhanced Rich text editor toolbar component
@@ -248,7 +249,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
   );
 }
 
-export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onSave, onCancel }: ItemDialogV3Props) {
+export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onSave, onCancel, readOnly = false }: ItemDialogV3Props) {
   const [name, setName] = useState(item?.name || '');
   const [estimatedTime, setEstimatedTime] = useState<string>(item?.estimated_time?.toString() || '');
   const [actualTime, setActualTime] = useState<string>(item?.actual_time?.toString() || '0');
@@ -259,6 +260,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
   const [loading, setLoading] = useState(false);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+  const [showCopied, setShowCopied] = useState(false);
 
   // Initialize rich text editor with all extensions
   const editor = useEditor({
@@ -284,6 +286,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
       }),
     ],
     content: item?.description || '',
+    editable: !readOnly,
     editorProps: {
       attributes: {
         class: 'ProseMirror',
@@ -402,6 +405,19 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
       });
     } catch (error: any) {
       console.error('Error fetching default values:', error);
+    }
+  };
+
+  const handleShare = () => {
+    if (item?.id) {
+      const shareUrl = `${window.location.origin}/item/${item.id}`;
+      navigator.clipboard.writeText(shareUrl);
+      setShowCopied(true);
+      setTimeout(() => setShowCopied(false), 2000);
+      toast({
+        title: "Link copied!",
+        description: "Share link has been copied to clipboard.",
+      });
     }
   };
 
@@ -762,18 +778,37 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         {/* Left Panel - Name & Description */}
         <div className="flex-1 flex flex-col border-r overflow-hidden">
           <div className="p-6 pb-3 flex-shrink-0">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Item name"
-              className="text-2xl font-semibold border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-              required
-            />
+            <div className="flex items-start gap-2">
+              <Input
+                value={name}
+                onChange={(e) => !readOnly && setName(e.target.value)}
+                placeholder="Item name"
+                className="text-2xl font-semibold border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                required
+                disabled={readOnly}
+              />
+              {item && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="flex-shrink-0"
+                  title="Share item"
+                >
+                  {showCopied ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Share2 className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
           
           <div className="flex-1 px-6 pb-6 overflow-hidden flex flex-col">
             <div className="border rounded-lg flex-1 flex flex-col overflow-hidden">
-              <EditorToolbar editor={editor} />
+              {!readOnly && <EditorToolbar editor={editor} />}
               <div className="flex-1 overflow-y-auto no-scrollbar">
                 <EditorContent editor={editor} className="h-full" />
               </div>
@@ -914,14 +949,23 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
       </div>
 
       {/* Footer Actions - Always visible */}
-      <div className="border-t p-4 flex justify-end gap-2 bg-background flex-shrink-0">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : (item ? 'Update Item' : 'Create Item')}
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="border-t p-4 flex justify-end gap-2 bg-background flex-shrink-0">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? 'Saving...' : (item ? 'Update Item' : 'Create Item')}
+          </Button>
+        </div>
+      )}
+      {readOnly && (
+        <div className="border-t p-4 flex justify-end gap-2 bg-background flex-shrink-0">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Close
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

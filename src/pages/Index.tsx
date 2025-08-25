@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DragProvider } from '@/contexts/DragContext';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { AppSidebar } from '@/components/AppSidebar';
 import { KanbanColumn } from '@/components/KanbanColumn';
+import { ItemDialogV3 } from '@/components/ItemDialogV3';
 import { CustomFieldsDialogV2 } from '@/components/CustomFieldsDialogV2';
 import { DefaultValuesDialog } from '@/components/DefaultValuesDialog';
 import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
@@ -87,7 +88,10 @@ const Index = () => {
   const [filters, setFilters] = useState<FilterCriteria>({});
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
   const [isEditingItem, setIsEditingItem] = useState(false); // Track if any item dialog is open
+  const [sharedItemId, setSharedItemId] = useState<string | null>(null);
+  const [sharedItem, setSharedItem] = useState<Item | null>(null);
   const navigate = useNavigate();
+  const { itemId } = useParams();
   
   // Track if this is the initial load
   const isInitialLoadRef = useRef(true);
@@ -278,6 +282,66 @@ const Index = () => {
     fetchColumns();
     fetchItems();
   };
+
+  // Handle shared item from URL
+  useEffect(() => {
+    if (itemId && user) {
+      const fetchSharedItem = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('items')
+            .select(`
+              *,
+              assignments:item_assignments(
+                user_id,
+                profiles!item_assignments_user_id_fkey(
+                  id,
+                  full_name,
+                  email
+                )
+              ),
+              custom_field_values:item_field_values(
+                field_id,
+                value,
+                custom_fields!item_field_values_field_id_fkey(
+                  name,
+                  field_type,
+                  show_in_preview
+                )
+              )
+            `)
+            .eq('id', itemId)
+            .single();
+
+          if (error) throw error;
+          
+          if (data) {
+            setSharedItem(data);
+            setSharedItemId(itemId);
+            // Set the project ID from the item's column
+            const { data: columnData } = await supabase
+              .from('columns')
+              .select('project_id')
+              .eq('id', data.column_id)
+              .single();
+            
+            if (columnData) {
+              setSelectedProjectId(columnData.project_id);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching shared item:', error);
+          toast({
+            title: "Item not found",
+            description: "The shared item could not be loaded.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      fetchSharedItem();
+    }
+  }, [itemId, user]);
 
   useEffect(() => {
     if (user && selectedProjectId) {
@@ -768,6 +832,39 @@ const Index = () => {
           open={defaultValuesDialogOpen}
           onOpenChange={setDefaultValuesDialogOpen}
         />
+        
+        {/* Shared Item Dialog */}
+        {sharedItem && (
+          <Dialog open={!!sharedItemId} onOpenChange={(open) => {
+            if (!open) {
+              setSharedItemId(null);
+              setSharedItem(null);
+              navigate('/');
+            }
+          }}>
+            <DialogContent className="h-[85vh] max-h-[900px] max-w-6xl overflow-hidden flex flex-col p-0">
+              <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
+                <DialogTitle>View Item #{sharedItem.item_id}</DialogTitle>
+              </DialogHeader>
+              <div className="flex-1 overflow-hidden min-h-0">
+                <ItemDialogV3
+                  item={sharedItem}
+                  columnId={sharedItem.column_id}
+                  projectId={selectedProjectId}
+                  profiles={profiles}
+                  columns={columns}
+                  onSave={() => {}}
+                  onCancel={() => {
+                    setSharedItemId(null);
+                    setSharedItem(null);
+                    navigate('/');
+                  }}
+                  readOnly={true}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
         </SidebarProvider>
       </DndProvider>
     </DragProvider>

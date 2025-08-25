@@ -784,7 +784,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
       {/* Main content area with three panels */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Comments */}
-        <div className="w-[350px] bg-muted/30 border-r overflow-hidden flex flex-col">
+        <div className="w-[320px] bg-muted/30 border-r overflow-hidden flex flex-col">
           <div className="p-4 flex-1 overflow-hidden">
             {item && currentUserId && (
               <ItemComments
@@ -803,8 +803,8 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
           </div>
         </div>
 
-        {/* Middle Panel - Name & Description */}
-        <div className="flex-1 flex flex-col border-r overflow-hidden">
+        {/* Middle Panel - Name & Description - Takes most space */}
+        <div className="flex-1 min-w-[600px] flex flex-col border-r overflow-hidden">
           <div className="p-6 pb-3 flex-shrink-0">
             <div className="flex items-start gap-2">
               <Input
@@ -845,7 +845,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         </div>
 
         {/* Right Panel - Properties */}
-        <div className="w-[400px] bg-muted/30 overflow-y-auto no-scrollbar">
+        <div className="w-[360px] bg-muted/30 overflow-y-auto no-scrollbar">
           <div className="p-6 space-y-6">
               {/* Built-in Fields */}
               <div>

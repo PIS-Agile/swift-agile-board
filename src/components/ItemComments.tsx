@@ -42,6 +42,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(true);
   const [mentionSearch, setMentionSearch] = useState('');
   const [showMentionPopover, setShowMentionPopover] = useState(false);
   const [mentionPosition, setMentionPosition] = useState(0);
@@ -49,6 +50,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log('ItemComments mounted for item:', itemId, 'with profiles:', profiles.length);
     fetchComments();
     
     // Set up realtime subscription
@@ -74,30 +76,43 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
   }, [itemId]);
 
   const fetchComments = async () => {
+    setLoadingComments(true);
     try {
       const { data: commentsData, error } = await supabase
         .from('item_comments')
         .select(`
           *,
-          profiles:user_id (
-            id,
-            full_name,
-            email
-          ),
-          mentions:comment_mentions (
-            user_id,
-            profiles:user_id (
-              id,
-              full_name,
-              email
-            )
+          comment_mentions (
+            user_id
           )
         `)
         .eq('item_id', itemId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      setComments(commentsData || []);
+      if (error) {
+        console.error('Error fetching comments:', error);
+        throw error;
+      }
+      
+      console.log('Fetched comments for item:', itemId, commentsData);
+      
+      // Enrich comments with user profile data
+      const enrichedComments = commentsData?.map(comment => {
+        const author = profiles.find(p => p.id === comment.user_id);
+        const mentions = comment.comment_mentions?.map((m: any) => ({
+          user_id: m.user_id,
+          profiles: profiles.find(p => p.id === m.user_id)
+        }));
+        
+        return {
+          ...comment,
+          profiles: author,
+          mentions
+        };
+      }) || [];
+      
+      setComments(enrichedComments);
+      setLoadingComments(false);
       
       // Scroll to bottom after loading comments
       setTimeout(() => {
@@ -107,6 +122,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
       }, 100);
     } catch (error: any) {
       console.error('Error fetching comments:', error);
+      setLoadingComments(false);
     }
   };
 
@@ -287,7 +303,11 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
       
       <ScrollArea className="flex-1 pr-4 mb-3" ref={scrollRef}>
         <div className="space-y-3">
-          {comments.length === 0 ? (
+          {loadingComments ? (
+            <div className="text-center text-muted-foreground text-sm py-8">
+              Loading comments...
+            </div>
+          ) : comments.length === 0 ? (
             <div className="text-center text-muted-foreground text-sm py-8">
               No comments yet
             </div>

@@ -273,7 +273,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
       </Card>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="h-[85vh] max-h-[900px] max-w-6xl overflow-hidden flex flex-col p-0">
+        <DialogContent className="h-[85vh] max-h-[900px] max-w-7xl overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
             <DialogTitle>Edit Item {item.item_id ? `#${item.item_id}` : ''}</DialogTitle>
           </DialogHeader>

@@ -125,7 +125,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 #{item.item_id}
               </Badge>
             )}
-            <h4 className="font-medium text-sm truncate">{item.name}</h4>
+            <h4 className="font-medium text-sm break-words">{item.name}</h4>
           </div>
           {(isHovered || dropdownOpen) && (
             <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -203,7 +203,6 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
             <div className="space-y-1 pt-1 border-t">
               {item.custom_field_values
                 .filter(fv => fv.custom_fields.show_in_preview !== false)
-                .slice(0, 3)
                 .map((fieldValue) => {
                 const value = fieldValue.value;
                 const fieldType = fieldValue.custom_fields.field_type;
@@ -257,15 +256,6 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                   </div>
                 );
               }).filter(Boolean)}
-              {item.custom_field_values.filter(fv => 
-                fv.value && fv.value !== '' && fv.custom_fields.show_in_preview !== false
-              ).length > 3 && (
-                <div className="text-xs text-muted-foreground">
-                  +{item.custom_field_values.filter(fv => 
-                    fv.value && fv.value !== '' && fv.custom_fields.show_in_preview !== false
-                  ).length - 3} more fields
-                </div>
-              )}
             </div>
           )}
         </div>

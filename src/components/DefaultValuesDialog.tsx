@@ -257,6 +257,8 @@ export function DefaultValuesDialog({ projectId, open, onOpenChange }: DefaultVa
     editorProps: {
       attributes: {
         class: 'ProseMirror',
+        spellcheck: 'true',
+        lang: 'es-ES', // Primary language Spanish, but browser will detect English too
       },
     },
   });

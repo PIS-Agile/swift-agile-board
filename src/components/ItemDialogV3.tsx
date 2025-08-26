@@ -292,6 +292,8 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
     editorProps: {
       attributes: {
         class: 'ProseMirror',
+        spellcheck: 'true',
+        lang: 'es-ES', // Primary language Spanish, but browser will detect English too
       },
     },
   });
@@ -649,6 +651,8 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
               [field.id]: e.target.value
             })}
             placeholder="Enter text"
+            spellCheck={true}
+            lang="es-ES"
           />
         );
       
@@ -812,6 +816,8 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                 className="text-2xl font-semibold border-0 px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 required
                 disabled={readOnly}
+                spellCheck={true}
+                lang="es-ES"
               />
               {item && (
                 <Button

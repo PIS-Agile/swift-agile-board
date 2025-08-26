@@ -351,7 +351,8 @@ export function FilterDropdown({
           
           <ScrollArea className="h-[400px] no-scrollbar">
             <div className="p-4 pt-2 space-y-4">
-              {/* Assigned Users - FIRST */}
+              {/* USER-BASED FIELDS SECTION - FIRST */}
+              {/* Built-in Assigned Users */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Assigned Users</Label>
                 <MultiSelect
@@ -363,7 +364,13 @@ export function FilterDropdown({
                 />
               </div>
 
-              {/* Item Number - RIGHT BELOW ASSIGNED USERS */}
+              {/* Custom User Fields - Right after assigned users */}
+              {customFields
+                .filter(field => field.field_type === 'user_select' || field.field_type === 'user_multiselect')
+                .map(field => renderCustomFieldFilter(field))}
+
+              {/* Item Number - SECOND (after all user fields) */}
+              <Separator />
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Item Number</Label>
                 <Input
@@ -486,13 +493,17 @@ export function FilterDropdown({
                 />
               </div>
 
-              {/* Custom Fields */}
-              {customFields.length > 0 && (
+              {/* Other Custom Fields (non-user fields) */}
+              {customFields.filter(field => 
+                field.field_type !== 'user_select' && field.field_type !== 'user_multiselect'
+              ).length > 0 && (
                 <>
                   <Separator />
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Custom Fields</Label>
-                    {customFields.map(field => renderCustomFieldFilter(field))}
+                    {customFields
+                      .filter(field => field.field_type !== 'user_select' && field.field_type !== 'user_multiselect')
+                      .map(field => renderCustomFieldFilter(field))}
                   </div>
                 </>
               )}

@@ -40,6 +40,9 @@ export interface FilterCriteria {
   assignedUsers?: string[];
   columns?: string[];
   customFields?: Record<string, any>;
+  user?: string; // New unified user filter
+  itemNumber?: number | null;
+  mentionsMe?: boolean;
 }
 
 interface FilterDialogProps {
@@ -80,7 +83,9 @@ export function FilterDialog({
     if (filters.estimatedTimeMax !== null && filters.estimatedTimeMax !== undefined) count++;
     if (filters.actualTimeMin !== null && filters.actualTimeMin !== undefined) count++;
     if (filters.actualTimeMax !== null && filters.actualTimeMax !== undefined) count++;
-    if (filters.assignedUsers && filters.assignedUsers.length > 0) count++;
+    if (filters.user && filters.user !== '__clear__') count++;
+    if (filters.itemNumber !== null && filters.itemNumber !== undefined) count++;
+    if (filters.mentionsMe) count++;
     if (filters.columns && filters.columns.length > 0) count++;
     if (filters.customFields) {
       Object.values(filters.customFields).forEach(value => {
@@ -122,7 +127,12 @@ export function FilterDialog({
   };
 
   const handleApplyFilters = () => {
-    onApplyFilters(filters);
+    // Clear the user filter if __clear__ was selected
+    const cleanFilters = { ...filters };
+    if (cleanFilters.user === '__clear__') {
+      cleanFilters.user = undefined;
+    }
+    onApplyFilters(cleanFilters);
     onOpenChange(false);
   };
 
@@ -136,12 +146,20 @@ export function FilterDialog({
       actualTimeMax: null,
       assignedUsers: [],
       columns: [],
-      customFields: {}
+      customFields: {},
+      user: undefined,
+      itemNumber: undefined,
+      mentionsMe: false
     };
     setFilters(emptyFilters);
   };
 
   const renderCustomFieldFilter = (field: CustomField) => {
+    // Skip user fields as they're handled by the unified User filter
+    if (field.field_type === 'user_select' || field.field_type === 'user_multiselect') {
+      return null;
+    }
+    
     const value = filters.customFields?.[field.id] || '';
     
     switch (field.field_type) {
@@ -262,38 +280,10 @@ export function FilterDialog({
           </div>
         );
       
+      // User fields are now handled by the unified User filter
       case 'user_select':
       case 'user_multiselect':
-        const selectedUserIds = Array.isArray(value) ? value : (value ? [value] : []);
-        return (
-          <div key={field.id} className="space-y-2">
-            <Label>{field.name}</Label>
-            <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-              {profiles.map((profile) => (
-                <label key={profile.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={selectedUserIds.includes(profile.id)}
-                    onCheckedChange={(checked) => {
-                      const newValue = checked
-                        ? [...selectedUserIds, profile.id]
-                        : selectedUserIds.filter(id => id !== profile.id);
-                      setFilters({
-                        ...filters,
-                        customFields: {
-                          ...filters.customFields,
-                          [field.id]: newValue
-                        }
-                      });
-                    }}
-                  />
-                  <span className="text-sm">
-                    {profile.full_name || profile.email || 'Unknown'}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-        );
+        return null;
       
       default:
         return null;
@@ -402,26 +392,40 @@ export function FilterDialog({
                 </div>
                 
                 <div>
-                  <Label>Assigned Users</Label>
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                    {profiles.map((profile) => (
-                      <label key={profile.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          checked={filters.assignedUsers?.includes(profile.id) || false}
-                          onCheckedChange={(checked) => {
-                            const currentUsers = filters.assignedUsers || [];
-                            const newUsers = checked
-                              ? [...currentUsers, profile.id]
-                              : currentUsers.filter(id => id !== profile.id);
-                            setFilters({ ...filters, assignedUsers: newUsers });
-                          }}
-                        />
-                        <span className="text-sm">
+                  <Label htmlFor="filter-user">User</Label>
+                  <Select
+                    value={filters.user || ''}
+                    onValueChange={(value) => setFilters({ ...filters, user: value || undefined })}
+                  >
+                    <SelectTrigger id="filter-user">
+                      <SelectValue placeholder="Select a user to filter by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__clear__">Clear selection</SelectItem>
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
                           {profile.full_name || profile.email || 'Unknown'}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Shows items where this user appears in any user field
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="filter-item-number">Item Number</Label>
+                  <Input
+                    id="filter-item-number"
+                    type="number"
+                    value={filters.itemNumber || ''}
+                    onChange={(e) => setFilters({ 
+                      ...filters, 
+                      itemNumber: e.target.value ? parseInt(e.target.value) : undefined 
+                    })}
+                    placeholder="Exact item number..."
+                  />
                 </div>
               </AccordionContent>
             </AccordionItem>

@@ -612,7 +612,37 @@ const Index = () => {
       );
     }
 
-    // Filter by assigned users
+    // Filter by unified user field
+    if (filters.user) {
+      filtered = filtered.filter(item => {
+        // Check if user is in assigned users
+        const assignedUserIds = item.assignments.map(a => a.user_id);
+        if (assignedUserIds.includes(filters.user!)) return true;
+        
+        // Check if user is in any custom user field
+        if (item.custom_field_values) {
+          for (const fieldValue of item.custom_field_values) {
+            // Check if this is a user field and contains the user
+            const field = customFields.find(f => f.id === fieldValue.field_id);
+            if (field && (field.field_type === 'user_select' || field.field_type === 'user_multiselect')) {
+              const value = fieldValue.value;
+              if (value) {
+                // Handle both single and multi-select user fields
+                if (Array.isArray(value)) {
+                  if (value.includes(filters.user!)) return true;
+                } else if (value === filters.user!) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+        
+        return false;
+      });
+    }
+    
+    // Keep support for old assignedUsers filter for backwards compatibility
     if (filters.assignedUsers && filters.assignedUsers.length > 0) {
       filtered = filtered.filter(item => {
         const assignedUserIds = item.assignments.map(a => a.user_id);
@@ -644,6 +674,12 @@ const Index = () => {
       Object.entries(filters.customFields).forEach(([fieldKey, filterValue]) => {
         if (filterValue === null || filterValue === undefined || filterValue === '' || 
             (Array.isArray(filterValue) && filterValue.length === 0)) {
+          return;
+        }
+
+        // Skip user fields as they're handled by the unified user filter
+        const field = customFields.find(f => f.id === fieldKey);
+        if (field && (field.field_type === 'user_select' || field.field_type === 'user_multiselect')) {
           return;
         }
 

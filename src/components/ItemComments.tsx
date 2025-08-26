@@ -127,21 +127,84 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
   };
 
   const extractMentions = (text: string): string[] => {
-    const mentionRegex = /@(\w+(?:\s+\w+)*)/g;
     const mentions: string[] = [];
-    let match;
     
-    while ((match = mentionRegex.exec(text)) !== null) {
-      const mentionText = match[1].toLowerCase();
-      const matchedUser = profiles.find(p => 
-        p.full_name?.toLowerCase().includes(mentionText) || 
-        p.email?.toLowerCase().includes(mentionText)
-      );
-      if (matchedUser) {
-        mentions.push(matchedUser.id);
+    console.log('Extracting mentions from:', text);
+    console.log('Available profiles:', profiles.map(p => ({ id: p.id, name: p.full_name, email: p.email })));
+    
+    // Split by @ to find all potential mentions
+    const parts = text.split('@');
+    
+    // Skip first part as it's before any @
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i];
+      
+      // Extract the mention text - take everything up to common delimiters
+      // but try to match against full names first
+      let mentionText = '';
+      
+      // Try to match against known names first (greedy approach)
+      for (const profile of profiles) {
+        const fullName = profile.full_name;
+        if (fullName && part.toLowerCase().startsWith(fullName.toLowerCase())) {
+          mentionText = fullName;
+          break;
+        }
+      }
+      
+      // If no exact match found, extract until delimiter
+      if (!mentionText) {
+        // Take text until we hit a delimiter or another @
+        const match = part.match(/^([^,.\n@!?;:]+)/);
+        if (match) {
+          mentionText = match[1].trim();
+        }
+      }
+      
+      if (mentionText) {
+        console.log('Found mention text:', mentionText);
+        
+        const mentionLower = mentionText.toLowerCase();
+        
+        // Try to find matching user
+        const matchedUser = profiles.find(p => {
+          const fullName = p.full_name?.toLowerCase().trim();
+          const email = p.email?.toLowerCase().trim();
+          
+          // Exact match on full name (case insensitive)
+          if (fullName === mentionLower) {
+            console.log(`Exact match found: "${mentionText}" === "${p.full_name}"`);
+            return true;
+          }
+          
+          // Match first name only
+          const firstName = p.full_name?.split(' ')[0]?.toLowerCase();
+          if (firstName === mentionLower) {
+            console.log(`First name match found: "${mentionText}" === "${firstName}"`);
+            return true;
+          }
+          
+          // Match email username part
+          const emailUsername = email?.split('@')[0];
+          if (emailUsername === mentionLower) {
+            console.log(`Email username match found: "${mentionText}" === "${emailUsername}"`);
+            return true;
+          }
+          
+          return false;
+        });
+        
+        if (matchedUser) {
+          console.log('Matched user:', matchedUser);
+          mentions.push(matchedUser.id);
+        } else {
+          console.log('No match found for:', mentionText);
+          console.log('Available users:', profiles.map(p => p.full_name || p.email));
+        }
       }
     }
     
+    console.log('Final extracted mentions:', mentions);
     return [...new Set(mentions)];
   };
 
@@ -165,17 +228,33 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
 
       // Extract and save mentions
       const mentionedUserIds = extractMentions(newComment);
+      console.log('Attempting to save mentions for users:', mentionedUserIds);
+      
       if (mentionedUserIds.length > 0) {
         const mentionsToInsert = mentionedUserIds.map(userId => ({
           comment_id: comment.id,
           user_id: userId,
         }));
 
-        const { error: mentionError } = await supabase
-          .from('comment_mentions')
-          .insert(mentionsToInsert);
+        console.log('Inserting mentions:', mentionsToInsert);
 
-        if (mentionError) console.error('Error saving mentions:', mentionError);
+        const { data: mentionData, error: mentionError } = await supabase
+          .from('comment_mentions')
+          .insert(mentionsToInsert)
+          .select();
+
+        if (mentionError) {
+          console.error('Error saving mentions:', mentionError);
+          toast({
+            title: "Warning",
+            description: "Comment saved but mentions might not work properly",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Mentions saved successfully:', mentionData);
+        }
+      } else {
+        console.log('No mentions found in comment');
       }
 
       setNewComment('');
@@ -277,17 +356,63 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
   });
 
   const formatCommentContent = (content: string) => {
-    // Replace @mentions with styled spans
-    return content.replace(/@(\w+(?:\s+\w+)*)/g, (match, name) => {
-      const matchedUser = profiles.find(p => 
-        p.full_name?.toLowerCase().includes(name.toLowerCase()) || 
-        p.email?.toLowerCase().includes(name.toLowerCase())
-      );
-      if (matchedUser) {
-        return `<span class="text-green-600 font-medium">@${name}</span>`;
+    let result = content;
+    
+    // Find all @mentions and replace with styled spans
+    const parts = content.split('@');
+    if (parts.length === 1) return content; // No mentions
+    
+    result = parts[0]; // Start with text before first @
+    
+    for (let i = 1; i < parts.length; i++) {
+      const part = parts[i];
+      let mentionText = '';
+      let remainingText = part;
+      
+      // Try to match against known names first (greedy approach)
+      for (const profile of profiles) {
+        const fullName = profile.full_name;
+        if (fullName && part.toLowerCase().startsWith(fullName.toLowerCase())) {
+          mentionText = fullName;
+          remainingText = part.substring(fullName.length);
+          break;
+        }
       }
-      return match;
-    });
+      
+      // If no exact match found, extract until delimiter
+      if (!mentionText) {
+        const match = part.match(/^([^,.\n@!?;:]+)(.*)/);
+        if (match) {
+          mentionText = match[1].trim();
+          remainingText = match[2] || '';
+        }
+      }
+      
+      if (mentionText) {
+        const mentionLower = mentionText.toLowerCase();
+        
+        // Check if this mention matches a user
+        const matchedUser = profiles.find(p => {
+          const fullName = p.full_name?.toLowerCase().trim();
+          const firstName = p.full_name?.split(' ')[0]?.toLowerCase();
+          const emailUsername = p.email?.split('@')[0]?.toLowerCase();
+          
+          return fullName === mentionLower || 
+                 firstName === mentionLower ||
+                 emailUsername === mentionLower;
+        });
+        
+        if (matchedUser) {
+          result += `<span class="text-green-600 font-medium">@${mentionText}</span>${remainingText}`;
+        } else {
+          result += `@${part}`;
+        }
+      } else {
+        result += `@${part}`;
+      }
+    }
+    
+    return result;
   };
 
   return (

@@ -783,30 +783,26 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
 
   return (
     <form onSubmit={handleSave} className="h-full flex flex-col overflow-hidden">
-      {/* Main content area with three panels */}
+      {/* Main content area - two panels for new items, three for existing */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Comments */}
-        <div className="w-[320px] bg-muted/30 border-r overflow-hidden flex flex-col">
-          <div className="p-4 flex-1 overflow-hidden">
-            {item && currentUserId && (
-              <ItemComments
-                itemId={item.id}
-                currentUserId={currentUserId}
-                profiles={profiles}
-                readOnly={readOnly}
-              />
-            )}
-            {!item && (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <MessageSquare className="h-12 w-12 mb-4" />
-                <p className="text-sm text-center">Comments will be available<br />after creating the item</p>
-              </div>
-            )}
+        {/* Left Panel - Comments (only for existing items) */}
+        {item && (
+          <div className="w-[320px] bg-muted/30 border-r overflow-hidden flex flex-col">
+            <div className="p-4 flex-1 overflow-hidden">
+              {currentUserId && (
+                <ItemComments
+                  itemId={item.id}
+                  currentUserId={currentUserId}
+                  profiles={profiles}
+                  readOnly={readOnly}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Middle Panel - Name & Description - Takes most space */}
-        <div className="flex-1 min-w-[600px] flex flex-col border-r overflow-hidden">
+        <div className={`flex-1 ${item ? 'min-w-[600px]' : ''} flex flex-col ${item ? 'border-r' : ''} overflow-hidden`}>
           <div className="p-6 pb-3 flex-shrink-0">
             <div className="flex items-start gap-2">
               <Input
@@ -847,7 +843,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         </div>
 
         {/* Right Panel - Properties */}
-        <div className="w-[360px] bg-muted/30 overflow-y-auto no-scrollbar">
+        <div className={`${item ? 'w-[360px]' : 'w-[400px]'} bg-muted/30 overflow-y-auto no-scrollbar`}>
           <div className="p-6 space-y-6">
               {/* Built-in Fields */}
               <div>

@@ -183,6 +183,42 @@ const Index = () => {
     }
   }, [selectedProjectId]);
 
+  // Separate function to check for mentions across entire project
+  const checkUserMentions = useCallback(async () => {
+    const currentUser = (await supabase.auth.getUser()).data.user;
+    if (!currentUser || !selectedProjectId) return;
+
+    try {
+      // Direct approach: Get unsolved mentions for current user, then check if they belong to this project
+      const { data: mentionedComments, error: mentionError } = await supabase
+        .from('comment_mentions')
+        .select(`
+          comment_id, 
+          item_comments!inner(
+            item_id, 
+            is_resolved,
+            items!inner(
+              project_id
+            )
+          )
+        `)
+        .eq('user_id', currentUser.id)
+        .eq('item_comments.is_resolved', false)
+        .eq('item_comments.items.project_id', selectedProjectId);
+
+      if (mentionError) {
+        console.error('Error fetching project mentions:', mentionError);
+        return;
+      }
+
+      const hasUnsolvedMentions = mentionedComments && mentionedComments.length > 0;
+      console.log('Project-wide mention check for project', selectedProjectId, ':', hasUnsolvedMentions, 'Count:', mentionedComments?.length || 0);
+      setUserHasMentions(hasUnsolvedMentions);
+    } catch (error) {
+      console.error('Error checking mentions:', error);
+    }
+  }, [selectedProjectId]);
+
   const fetchItems = useCallback(async () => {
     if (!selectedProjectId) return;
     
@@ -272,10 +308,8 @@ const Index = () => {
           has_user_mentions: unsolvedMentionItemIds.has(item.id)
         }));
 
-        // Check if user has any unsolved mentions
-        const hasUnsolvedMentions = data.some(item => item.has_user_mentions);
-        console.log('User has unsolved mentions:', hasUnsolvedMentions);
-        setUserHasMentions(hasUnsolvedMentions);
+        // Don't update mention status here - let checkUserMentions handle it project-wide
+        // This ensures we don't miss mentions in items outside current view
 
         console.log('📦 Fetched items with comments:', data?.length || 0);
         // Debug: Check if item_id is included
@@ -302,6 +336,8 @@ const Index = () => {
       // Then fetch columns and items
       await fetchColumns();
       await fetchItems();
+      // Always check for mentions project-wide
+      await checkUserMentions();
     } catch (error: any) {
       toast({
         title: "Error loading data",
@@ -309,14 +345,15 @@ const Index = () => {
         variant: "destructive",
       });
     }
-  }, [fetchColumns, fetchItems]);
+  }, [fetchColumns, fetchItems, checkUserMentions]);
 
   // Simple callback for any data change
   const handleDataChange = useCallback(() => {
     console.log('🔄 Realtime data change detected, refreshing...');
     fetchColumns();
     fetchItems();
-  }, [fetchColumns, fetchItems]);
+    checkUserMentions();
+  }, [fetchColumns, fetchItems, checkUserMentions]);
 
   // Use the realtime subscription hook with reset capability
   const { isConnected, resetConnection } = useRealtimeWithReset({
@@ -338,6 +375,7 @@ const Index = () => {
     console.log('🔄 Force refreshing data...');
     fetchColumns();
     fetchItems();
+    checkUserMentions();
   };
 
   // Handle shared item from URL

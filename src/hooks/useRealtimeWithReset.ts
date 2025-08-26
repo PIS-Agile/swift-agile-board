@@ -147,6 +147,30 @@ export function useRealtimeWithReset({
           console.log('⚙️ Custom fields changed:', payload.eventType);
           callbackRef.current();
         }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'item_comments'
+        },
+        (payload) => {
+          console.log('💬 Comments changed:', payload.eventType);
+          callbackRef.current();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'comment_mentions'
+        },
+        (payload) => {
+          console.log('📢 Mentions changed:', payload.eventType);
+          callbackRef.current();
+        }
       );
 
     // Subscribe to the channel
@@ -158,7 +182,7 @@ export function useRealtimeWithReset({
         console.log('👂 Listening for changes on:', {
           channel: channelName,
           projectId: projectId,
-          tables: ['items', 'columns', 'item_assignments', 'item_field_values', 'custom_fields']
+          tables: ['items', 'columns', 'item_assignments', 'item_field_values', 'custom_fields', 'item_comments', 'comment_mentions']
         });
         
         setIsConnected(true);

@@ -240,11 +240,17 @@ const Index = () => {
           .in('item_id', itemIds);
 
         // Get items where current user is mentioned in UNSOLVED comments
-        const { data: mentionedItems } = await supabase
+        const { data: mentionedItems, error: mentionError } = await supabase
           .from('comment_mentions')
           .select('comment_id, item_comments!inner(item_id, is_resolved)')
           .eq('user_id', currentUser.id)
           .eq('item_comments.is_resolved', false);
+
+        if (mentionError) {
+          console.error('Error fetching mentions:', mentionError);
+        }
+
+        console.log('Mentions query result for user', currentUser.id, ':', mentionedItems);
 
         // Create maps for quick lookup
         const commentCountMap = commentCounts?.reduce((acc, comment) => {
@@ -257,6 +263,8 @@ const Index = () => {
           mentionedItems?.map(m => (m as any).item_comments.item_id) || []
         );
 
+        console.log('Items with unsolved mentions:', Array.from(unsolvedMentionItemIds));
+
         // Add comment counts and unsolved mention status to items
         const data = itemsData.map(item => ({
           ...item,
@@ -266,6 +274,7 @@ const Index = () => {
 
         // Check if user has any unsolved mentions
         const hasUnsolvedMentions = data.some(item => item.has_user_mentions);
+        console.log('User has unsolved mentions:', hasUnsolvedMentions);
         setUserHasMentions(hasUnsolvedMentions);
 
         console.log('📦 Fetched items with comments:', data?.length || 0);

@@ -1,0 +1,9 @@
+-- NO MIGRATION NEEDED!
+-- The supabase_realtime publication is set to "FOR ALL TABLES"
+-- This means item_comments and comment_mentions tables are ALREADY included in realtime
+-- 
+-- You can verify this by running:
+-- SELECT * FROM pg_publication WHERE pubname = 'supabase_realtime';
+-- 
+-- If it shows "puballtables = true", then all tables are automatically included
+-- and realtime is already enabled for our comment tables!

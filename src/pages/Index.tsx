@@ -186,33 +186,61 @@ const Index = () => {
   // Separate function to check for mentions across entire project
   const checkUserMentions = useCallback(async () => {
     const currentUser = (await supabase.auth.getUser()).data.user;
-    if (!currentUser || !selectedProjectId) return;
+    if (!currentUser || !selectedProjectId) {
+      console.log('Skipping mention check - no user or project:', { currentUser: !!currentUser, selectedProjectId });
+      return;
+    }
+
+    console.log('Checking mentions for user:', currentUser.id, 'in project:', selectedProjectId);
 
     try {
-      // Direct approach: Get unsolved mentions for current user, then check if they belong to this project
-      const { data: mentionedComments, error: mentionError } = await supabase
-        .from('comment_mentions')
-        .select(`
-          comment_id, 
-          item_comments!inner(
-            item_id, 
-            is_resolved,
-            items!inner(
-              project_id
-            )
-          )
-        `)
-        .eq('user_id', currentUser.id)
-        .eq('item_comments.is_resolved', false)
-        .eq('item_comments.items.project_id', selectedProjectId);
+      // Step 1: Get all items in this project
+      const { data: projectItems, error: itemsError } = await supabase
+        .from('items')
+        .select('id')
+        .eq('project_id', selectedProjectId);
 
-      if (mentionError) {
-        console.error('Error fetching project mentions:', mentionError);
+      if (itemsError) {
+        console.error('Error fetching project items:', itemsError);
         return;
       }
 
-      const hasUnsolvedMentions = mentionedComments && mentionedComments.length > 0;
-      console.log('Project-wide mention check for project', selectedProjectId, ':', hasUnsolvedMentions, 'Count:', mentionedComments?.length || 0);
+      if (!projectItems || projectItems.length === 0) {
+        console.log('No items in project, no mentions possible');
+        setUserHasMentions(false);
+        return;
+      }
+
+      const itemIds = projectItems.map(item => item.id);
+      console.log('Found', itemIds.length, 'items in project');
+
+      // Step 2: Get all comments on these items that mention the current user and are unresolved
+      const { data: unsolvedMentions, error: mentionsError } = await supabase
+        .from('item_comments')
+        .select(`
+          id,
+          item_id,
+          is_resolved,
+          comment_mentions!inner(
+            user_id
+          )
+        `)
+        .in('item_id', itemIds)
+        .eq('is_resolved', false)
+        .eq('comment_mentions.user_id', currentUser.id);
+
+      if (mentionsError) {
+        console.error('Error fetching mentions:', mentionsError);
+        return;
+      }
+
+      const hasUnsolvedMentions = unsolvedMentions && unsolvedMentions.length > 0;
+      console.log('Unsolved mentions found:', hasUnsolvedMentions, 'Count:', unsolvedMentions?.length || 0);
+      
+      if (unsolvedMentions && unsolvedMentions.length > 0) {
+        console.log('Unsolved mentions details:', unsolvedMentions);
+      }
+      
       setUserHasMentions(hasUnsolvedMentions);
     } catch (error) {
       console.error('Error checking mentions:', error);
@@ -466,6 +494,14 @@ const Index = () => {
       }
     }
   }, [user, selectedProjectId, fetchData]);
+  
+  // Ensure mentions are checked when user logs in
+  useEffect(() => {
+    if (user && selectedProjectId) {
+      console.log('User authenticated, checking mentions for:', user.id);
+      checkUserMentions();
+    }
+  }, [user, selectedProjectId, checkUserMentions]);
 
   // Apply filters whenever items or filters change
   useEffect(() => {
@@ -791,6 +827,22 @@ const Index = () => {
                     )}
                     
                     <div className="flex gap-2">
+                      {/* DEBUG: Show button state */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={async () => {
+                            console.log('=== MANUAL MENTION CHECK ===');
+                            console.log('Current userHasMentions state:', userHasMentions);
+                            await checkUserMentions();
+                            console.log('Check complete. New state should be set.');
+                          }}
+                        >
+                          Debug Mentions ({userHasMentions ? 'YES' : 'NO'})
+                        </Button>
+                      )}
+                      
                       {userHasMentions && (
                         <Button
                           size="sm"

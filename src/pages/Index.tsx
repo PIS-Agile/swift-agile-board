@@ -18,6 +18,7 @@ import { FilterDropdown, FilterCriteria } from '@/components/FilterDropdown';
 import { TestDropdown } from '@/components/TestDropdown';
 import { RealtimeStatus } from '@/components/RealtimeStatus';
 import { useRealtimeWithReset } from '@/hooks/useRealtimeWithReset';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Menu, Settings2, FileText, AtSign } from 'lucide-react';
 import type { User, Session } from '@supabase/supabase-js';
@@ -82,6 +83,7 @@ interface Project {
 }
 
 const Index = () => {
+  const { isAdmin } = useAdminStatus();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('00000000-0000-0000-0000-000000000001');
@@ -936,31 +938,33 @@ const Index = () => {
                         columns={columns}
                       />
                       
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setDefaultValuesDialogOpen(true)}
-                      >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Default Values
-                      </Button>
-                      
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setCustomFieldsDialogOpen(true)}
-                      >
-                        <Settings2 className="h-4 w-4 mr-2" />
-                        Custom Fields
-                      </Button>
-                      
-                      <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Column
+                      {isAdmin && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDefaultValuesDialogOpen(true)}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Default Values
                           </Button>
-                        </DialogTrigger>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCustomFieldsDialogOpen(true)}
+                          >
+                            <Settings2 className="h-4 w-4 mr-2" />
+                            Custom Fields
+                          </Button>
+                          
+                          <Dialog open={newColumnDialogOpen} onOpenChange={setNewColumnDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Column
+                              </Button>
+                            </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
                           <DialogTitle>Create New Column</DialogTitle>
@@ -1008,6 +1012,8 @@ const Index = () => {
                         </form>
                       </DialogContent>
                     </Dialog>
+                        </>
+                      )}
                     </div>
                   </div>
               </div>
@@ -1053,10 +1059,12 @@ const Index = () => {
                             Create your first column to get started
                           </p>
                         </div>
-                        <Button onClick={() => setNewColumnDialogOpen(true)}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Column
-                        </Button>
+                        {isAdmin && (
+                          <Button onClick={() => setNewColumnDialogOpen(true)}>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Column
+                          </Button>
+                        )}
                       </div>
                     </div>
                   )}

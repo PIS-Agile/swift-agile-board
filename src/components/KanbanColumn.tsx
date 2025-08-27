@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { KanbanItem } from './KanbanItem';
 import { ItemDialogV3 } from './ItemDialogV3';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit3, MoreHorizontal, Palette } from 'lucide-react';
 
@@ -58,6 +59,7 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({ column, items, profiles, projectId, columns, onItemUpdate, onColumnUpdate, onColumnReorder, onItemDialogChange }: KanbanColumnProps) {
+  const { isAdmin } = useAdminStatus();
   const [isHovered, setIsHovered] = useState(false);
   const [itemDialogOpen, setItemDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState(false);
@@ -149,13 +151,14 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
     };
   }, []);
 
-  // Drag source for column
+  // Drag source for column (only admins can drag)
   const [{ isDragging }, dragRef] = useDrag({
     type: 'column',
     item: { id: column.id, position: column.position },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
+    canDrag: isAdmin,
   });
 
   // Drop target for columns (for reordering)
@@ -390,7 +393,7 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
       {isOverColumn && !isDragging && (
         <div className="absolute inset-0 border-2 border-primary rounded-lg pointer-events-none animate-pulse" />
       )}
-      <div className={`flex items-center justify-between mb-4 ${isDragging ? 'cursor-grabbing' : ''}`}>
+      <div className={`flex items-center justify-between mb-4 ${isDragging ? 'cursor-grabbing' : ''} ${isAdmin ? 'cursor-move' : ''}`}>
         <div className="flex items-center gap-2 flex-1">
           <div
             className="w-3 h-3 rounded-full transition-transform"
@@ -421,7 +424,7 @@ export function KanbanColumn({ column, items, profiles, projectId, columns, onIt
           </span>
         </div>
         
-        {(isHovered || dropdownOpen) && !editingColumn && (
+        {isAdmin && (isHovered || dropdownOpen) && !editingColumn && (
           <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button 

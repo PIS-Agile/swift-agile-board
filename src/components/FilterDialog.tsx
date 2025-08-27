@@ -316,6 +316,43 @@ export function FilterDialog({
               <AccordionTrigger>Basic Fields</AccordionTrigger>
               <AccordionContent className="space-y-4">
                 <div>
+                  <Label htmlFor="filter-user">User</Label>
+                  <Select
+                    value={filters.user || ''}
+                    onValueChange={(value) => setFilters({ ...filters, user: value === '__clear__' ? undefined : value })}
+                  >
+                    <SelectTrigger id="filter-user">
+                      <SelectValue placeholder="Select a user to filter by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__clear__">Clear selection</SelectItem>
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.full_name || profile.email || 'Unknown'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Shows items where this user appears in any user field (assigned to, or custom user fields)
+                  </p>
+                </div>
+                
+                <div>
+                  <Label htmlFor="filter-item-number">Item Number</Label>
+                  <Input
+                    id="filter-item-number"
+                    type="number"
+                    value={filters.itemNumber || ''}
+                    onChange={(e) => setFilters({ 
+                      ...filters, 
+                      itemNumber: e.target.value ? parseInt(e.target.value) : undefined 
+                    })}
+                    placeholder="Exact item number..."
+                  />
+                </div>
+                
+                <div>
                   <Label htmlFor="filter-name">Name</Label>
                   <Input
                     id="filter-name"
@@ -390,43 +427,6 @@ export function FilterDialog({
                     />
                   </div>
                 </div>
-                
-                <div>
-                  <Label htmlFor="filter-user">User</Label>
-                  <Select
-                    value={filters.user || ''}
-                    onValueChange={(value) => setFilters({ ...filters, user: value || undefined })}
-                  >
-                    <SelectTrigger id="filter-user">
-                      <SelectValue placeholder="Select a user to filter by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__clear__">Clear selection</SelectItem>
-                      {profiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.id}>
-                          {profile.full_name || profile.email || 'Unknown'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Shows items where this user appears in any user field
-                  </p>
-                </div>
-                
-                <div>
-                  <Label htmlFor="filter-item-number">Item Number</Label>
-                  <Input
-                    id="filter-item-number"
-                    type="number"
-                    value={filters.itemNumber || ''}
-                    onChange={(e) => setFilters({ 
-                      ...filters, 
-                      itemNumber: e.target.value ? parseInt(e.target.value) : undefined 
-                    })}
-                    placeholder="Exact item number..."
-                  />
-                </div>
               </AccordionContent>
             </AccordionItem>
             
@@ -460,11 +460,13 @@ export function FilterDialog({
               </AccordionContent>
             </AccordionItem>
             
-            {customFields.length > 0 && (
+            {customFields.filter(f => f.field_type !== 'user_select' && f.field_type !== 'user_multiselect').length > 0 && (
               <AccordionItem value="custom">
                 <AccordionTrigger>Custom Fields</AccordionTrigger>
                 <AccordionContent className="space-y-4">
-                  {customFields.map(field => renderCustomFieldFilter(field))}
+                  {customFields
+                    .filter(field => field.field_type !== 'user_select' && field.field_type !== 'user_multiselect')
+                    .map(field => renderCustomFieldFilter(field))}
                 </AccordionContent>
               </AccordionItem>
             )}

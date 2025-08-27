@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ItemDialogV3 } from './ItemDialogV3';
 import { toast } from '@/hooks/use-toast';
-import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare, Eye } from 'lucide-react';
+import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare, Eye, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface Item {
@@ -133,10 +133,14 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 #{item.item_id}
               </Badge>
             )}
-            {item.is_open === true && (
-              <Badge variant="secondary" className="text-xs px-1.5 py-0.5 bg-emerald-900/10 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-700/20 dark:border-emerald-800/30 flex-shrink-0">
-                Unverified
-              </Badge>
+            {item.is_open !== undefined && (
+              <div className="flex-shrink-0" title={item.is_open ? "Unverified" : "Verified"}>
+                {item.is_open ? (
+                  <AlertCircle className="h-3.5 w-3.5 text-emerald-600/70 dark:text-emerald-400/60" />
+                ) : (
+                  <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </div>
             )}
             <h4 className="font-medium text-sm break-words">{item.name}</h4>
           </div>

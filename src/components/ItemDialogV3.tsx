@@ -454,16 +454,22 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
 
       if (item) {
         // Update existing item
+        const updateData: any = {
+          name: name.trim(),
+          description,
+          estimated_time: estimatedTime ? parseFloat(estimatedTime) : null,
+          actual_time: actualTime ? parseFloat(actualTime) : 0,
+          column_id: selectedColumnId,
+        };
+        
+        // Only admins can change the is_open status
+        if (isAdmin) {
+          updateData.is_open = isOpen;
+        }
+        
         const { error: updateError } = await supabase
           .from('items')
-          .update({
-            name: name.trim(),
-            description,
-            estimated_time: estimatedTime ? parseFloat(estimatedTime) : null,
-            actual_time: actualTime ? parseFloat(actualTime) : 0,
-            column_id: selectedColumnId,
-            is_open: isOpen,
-          })
+          .update(updateData)
           .eq('id', item.id);
 
         if (updateError) throw updateError;
@@ -654,13 +660,14 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         return (
           <Input
             value={value || ''}
-            onChange={(e) => setCustomFieldValues({
+            onChange={(e) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: e.target.value
             })}
             placeholder="Enter text"
             spellCheck={true}
             lang="es-ES"
+            disabled={readOnly}
           />
         );
       
@@ -671,11 +678,12 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
             min="0"
             step="0.01"
             value={value || ''}
-            onChange={(e) => setCustomFieldValues({
+            onChange={(e) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: e.target.value ? parseFloat(e.target.value) : null
             })}
             placeholder="0"
+            disabled={readOnly}
           />
         );
       
@@ -684,10 +692,11 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
           <Input
             type="date"
             value={value || ''}
-            onChange={(e) => setCustomFieldValues({
+            onChange={(e) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: e.target.value
             })}
+            disabled={readOnly}
           />
         );
       
@@ -695,10 +704,11 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         return (
           <Select
             value={value || 'no-value'}
-            onValueChange={(newValue) => setCustomFieldValues({
+            onValueChange={(newValue) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: newValue === 'no-value' ? null : newValue
             })}
+            disabled={readOnly}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select option" />
@@ -723,13 +733,14 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
               label: option,
             }))}
             selected={multiselectValue}
-            onChange={(newValues) => setCustomFieldValues({
+            onChange={(newValues) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: newValues
             })}
             placeholder="Select options..."
             searchPlaceholder="Search options..."
             emptyText="No options available"
+            disabled={readOnly}
           />
         );
       
@@ -737,10 +748,11 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
         return (
           <Select
             value={value || 'no-value'}
-            onValueChange={(newValue) => setCustomFieldValues({
+            onValueChange={(newValue) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: newValue === 'no-value' ? null : newValue
             })}
+            disabled={readOnly}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select user" />
@@ -765,13 +777,14 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
               label: profile.full_name || profile.email || 'Unknown',
             }))}
             selected={userMultiselectValue}
-            onChange={(newValues) => setCustomFieldValues({
+            onChange={(newValues) => !readOnly && setCustomFieldValues({
               ...customFieldValues,
               [field.id]: newValues
             })}
             placeholder="Select users..."
             searchPlaceholder="Search users..."
             emptyText="No users found"
+            disabled={readOnly}
           />
         );
       
@@ -881,28 +894,29 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                     </div>
                   )}
 
-                  {/* Open/Closed Status - Only admins can change */}
-                  <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
-                    <Label className="text-right flex items-center justify-end gap-1">
-                      {isOpen ? (
-                        <LockOpen className="h-3 w-3 text-green-600 dark:text-green-400" />
-                      ) : (
-                        <Lock className="h-3 w-3 text-muted-foreground" />
-                      )}
-                      <span className="text-sm">Status</span>
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={isOpen}
-                        onCheckedChange={setIsOpen}
-                        disabled={readOnly || !isAdmin}
-                        className={isOpen ? 'data-[state=checked]:bg-green-600' : ''}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {isOpen ? 'Open - Editable by all' : 'Closed - Admin only'}
-                      </span>
+                  {/* Open/Closed Status - Only visible to admins */}
+                  {isAdmin && (
+                    <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
+                      <Label className="text-right flex items-center justify-end gap-1">
+                        {isOpen ? (
+                          <LockOpen className="h-3 w-3 text-green-600 dark:text-green-400" />
+                        ) : (
+                          <Lock className="h-3 w-3 text-muted-foreground" />
+                        )}
+                        <span className="text-sm">Status</span>
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={isOpen}
+                          onCheckedChange={setIsOpen}
+                          className={isOpen ? 'data-[state=checked]:bg-green-600' : ''}
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {isOpen ? 'Open - Editable by all' : 'Closed - Admin only'}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   
                   {/* Column */}
                   {columns && columns.length > 0 && (
@@ -911,7 +925,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                         <FileText className="h-3 w-3 text-muted-foreground" />
                         <span className="text-sm">Column</span>
                       </Label>
-                      <Select value={selectedColumnId} onValueChange={setSelectedColumnId}>
+                      <Select value={selectedColumnId} onValueChange={(value) => !readOnly && setSelectedColumnId(value)} disabled={readOnly}>
                         <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
@@ -938,9 +952,10 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                         min="0"
                         step="0.5"
                         value={estimatedTime}
-                        onChange={(e) => setEstimatedTime(e.target.value)}
+                        onChange={(e) => !readOnly && setEstimatedTime(e.target.value)}
                         placeholder="0"
                         className="w-20"
+                        disabled={readOnly}
                       />
                       <span className="text-sm text-muted-foreground">hours</span>
                     </div>
@@ -958,9 +973,10 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                         min="0"
                         step="0.5"
                         value={actualTime}
-                        onChange={(e) => setActualTime(e.target.value)}
+                        onChange={(e) => !readOnly && setActualTime(e.target.value)}
                         placeholder="0"
                         className="w-20"
+                        disabled={readOnly}
                       />
                       <span className="text-sm text-muted-foreground">hours</span>
                     </div>
@@ -978,10 +994,11 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                         label: profile.full_name || profile.email || 'Unknown',
                       }))}
                       selected={selectedUserIds}
-                      onChange={setSelectedUserIds}
+                      onChange={(values) => !readOnly && setSelectedUserIds(values)}
                       placeholder="Select users..."
                       searchPlaceholder="Search users..."
                       emptyText="No users found"
+                      disabled={readOnly}
                     />
                   </div>
                 </div>

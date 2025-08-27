@@ -72,7 +72,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-    canDrag: isAdmin, // Only admins can drag items
+    canDrag: isAdmin || item.is_open === true, // Admins can drag any item, non-admins can drag open items
   });
 
   const handleDelete = async () => {
@@ -116,8 +116,8 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
     <>
       <Card
           ref={drag}
-          className={`kanban-item ${isAdmin ? 'cursor-pointer' : 'cursor-default'} ${
-            isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : isAdmin ? 'cursor-pointer hover:shadow-md transition-shadow' : 'hover:shadow-sm transition-shadow'
+          className={`kanban-item ${(isAdmin || item.is_open === true) ? 'cursor-pointer' : 'cursor-default'} ${
+            isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : (isAdmin || item.is_open === true) ? 'cursor-pointer hover:shadow-md transition-shadow' : 'hover:shadow-sm transition-shadow'
           } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''} ${
             item.is_open ? 'bg-green-50/30 dark:bg-green-950/10 border-green-200/50 dark:border-green-900/30' : ''
           }`}
@@ -156,7 +156,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                {isAdmin ? (
+                {isAdmin || item.is_open === true ? (
                   <>
                     <DropdownMenuItem
                       onSelect={() => {
@@ -318,7 +318,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 setEditDialogOpen(false);
               }}
               onCancel={() => setEditDialogOpen(false)}
-              readOnly={!isAdmin}
+              readOnly={!isAdmin && item.is_open === false}
             />
           </div>
         </DialogContent>

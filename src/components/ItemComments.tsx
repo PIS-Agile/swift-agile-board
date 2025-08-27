@@ -37,9 +37,10 @@ interface ItemCommentsProps {
   currentUserId: string;
   profiles: Profile[];
   readOnly?: boolean;
+  isItemOpen?: boolean;
 }
 
-export function ItemComments({ itemId, currentUserId, profiles, readOnly = false }: ItemCommentsProps) {
+export function ItemComments({ itemId, currentUserId, profiles, readOnly = false, isItemOpen = true }: ItemCommentsProps) {
   const { isAdmin } = useAdminStatus();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -469,7 +470,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                             {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                           </span>
                         </div>
-                        {!readOnly && isAdmin && (
+                        {!readOnly && (isAdmin || isItemOpen) && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               type="button"
@@ -485,15 +486,19 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                                 <Circle className="h-3 w-3" />
                               )}
                             </Button>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 w-6 p-0 text-destructive"
-                              onClick={() => handleDelete(comment.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                            {/* Delete button: admins can delete any comment, non-admins can only delete their own on open items */}
+                            {(isAdmin || (isItemOpen && comment.user_id === currentUserId)) && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-destructive"
+                                onClick={() => handleDelete(comment.id)}
+                                title={isAdmin ? "Delete comment" : "Delete your comment"}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>

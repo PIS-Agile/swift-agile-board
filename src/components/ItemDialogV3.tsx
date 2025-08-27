@@ -820,6 +820,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                   currentUserId={currentUserId}
                   profiles={profiles}
                   readOnly={readOnly}
+                  isItemOpen={isOpen}
                 />
               )}
             </div>

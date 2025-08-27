@@ -12,6 +12,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { Filter, X, RotateCcw, Search, AtSign } from 'lucide-react';
 
@@ -46,6 +47,7 @@ export interface FilterCriteria {
   columns?: string[];
   customFields?: Record<string, any>;
   mentionsMe?: boolean;
+  user?: string; // New unified user filter
 }
 
 interface FilterDropdownProps {
@@ -86,7 +88,7 @@ export function FilterDropdown({
     if (filters.estimatedTimeMax !== null && filters.estimatedTimeMax !== undefined) count++;
     if (filters.actualTimeMin !== null && filters.actualTimeMin !== undefined) count++;
     if (filters.actualTimeMax !== null && filters.actualTimeMax !== undefined) count++;
-    if (filters.assignedUsers && filters.assignedUsers.length > 0) count++;
+    if (filters.user) count++;
     if (filters.itemNumber !== null && filters.itemNumber !== undefined) count++;
     if (filters.mentionsMe) count++;
     if (filters.columns && filters.columns.length > 0) count++;
@@ -147,7 +149,8 @@ export function FilterDropdown({
       itemNumber: null,
       mentionsMe: false,
       columns: [],
-      customFields: {}
+      customFields: {},
+      user: undefined
     };
     setFilters(emptyFilters);
     onApplyFilters(emptyFilters);
@@ -167,6 +170,11 @@ export function FilterDropdown({
   }));
 
   const renderCustomFieldFilter = (field: CustomField) => {
+    // Skip user fields as they're handled by the unified User filter
+    if (field.field_type === 'user_select' || field.field_type === 'user_multiselect') {
+      return null;
+    }
+    
     const value = filters.customFields?.[field.id] || '';
     
     switch (field.field_type) {
@@ -291,26 +299,10 @@ export function FilterDropdown({
           </div>
         );
       
+      // User fields are now handled by the unified User filter
       case 'user_select':
       case 'user_multiselect':
-        const selectedUserIds = Array.isArray(value) ? value : (value ? [value] : []);
-        return (
-          <div key={field.id} className="space-y-2">
-            <Label className="text-sm">{field.name}</Label>
-            <MultiSelect
-              options={profileOptions}
-              selected={selectedUserIds}
-              onChange={(newValues) => setFilters({
-                ...filters,
-                customFields: {
-                  ...filters.customFields,
-                  [field.id]: newValues
-                }
-              })}
-              placeholder={`Select ${field.name}...`}
-            />
-          </div>
-        );
+        return null;
       
       default:
         return null;
@@ -351,25 +343,30 @@ export function FilterDropdown({
           
           <ScrollArea className="h-[400px] no-scrollbar">
             <div className="p-4 pt-2 space-y-4">
-              {/* USER-BASED FIELDS SECTION - FIRST */}
-              {/* Built-in Assigned Users */}
+              {/* USER FILTER - FIRST (unified for all user fields) */}
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">Assigned Users</Label>
-                <MultiSelect
-                  options={profileOptions}
-                  selected={filters.assignedUsers || []}
-                  onChange={(newValues) => setFilters({ ...filters, assignedUsers: newValues })}
-                  placeholder="Select users..."
-                  searchPlaceholder="Search users..."
-                />
+                <Label className="text-sm font-semibold">User</Label>
+                <Select
+                  value={filters.user || ''}
+                  onValueChange={(value) => setFilters({ ...filters, user: value || undefined })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select a user to filter by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.full_name || profile.email || 'Unknown'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Shows items where this user appears in any user field
+                </p>
               </div>
 
-              {/* Custom User Fields - Right after assigned users */}
-              {customFields
-                .filter(field => field.field_type === 'user_select' || field.field_type === 'user_multiselect')
-                .map(field => renderCustomFieldFilter(field))}
-
-              {/* Item Number - SECOND (after all user fields) */}
+              {/* Item Number - SECOND */}
               <Separator />
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Item Number</Label>

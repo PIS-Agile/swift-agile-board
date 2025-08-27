@@ -133,13 +133,9 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 #{item.item_id}
               </Badge>
             )}
-            {item.is_open !== undefined && (
-              <div className="flex-shrink-0" title={item.is_open ? "Unverified" : "Verified"}>
-                {item.is_open ? (
-                  <AlertCircle className="h-3.5 w-3.5 text-emerald-600/70 dark:text-emerald-400/60" />
-                ) : (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
-                )}
+            {item.is_open === true && (
+              <div className="flex-shrink-0" title="Unverified">
+                <AlertCircle className="h-3.5 w-3.5 text-emerald-600/50 dark:text-emerald-400/40" />
               </div>
             )}
             <h4 className="font-medium text-sm break-words">{item.name}</h4>

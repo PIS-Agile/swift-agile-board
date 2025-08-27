@@ -61,12 +61,13 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
     // Reset height to auto to get the correct scrollHeight
     textarea.style.height = 'auto';
     
-    // Calculate new height with max of 5 lines (roughly 120px)
+    // Calculate new height with max of 10 lines
     const lineHeight = 24; // Approximate line height in pixels
-    const maxHeight = lineHeight * 5; // Max 5 lines
+    const maxHeight = lineHeight * 10; // Max 10 lines
     const newHeight = Math.min(textarea.scrollHeight, maxHeight);
     
     textarea.style.height = `${newHeight}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'hidden' : 'hidden';
   };
 
   useEffect(() => {
@@ -558,7 +559,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                   }}
                   placeholder="Add a comment... (use @ to mention)"
                   disabled={loading}
-                  className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+                  className="flex-1 min-h-[40px] max-h-[240px] resize-none overflow-hidden [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                   rows={1}
                 />
                 <Button

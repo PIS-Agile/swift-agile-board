@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -49,8 +50,28 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
   const [mentionSearch, setMentionSearch] = useState('');
   const [showMentionPopover, setShowMentionPopover] = useState(false);
   const [mentionPosition, setMentionPosition] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-resize textarea
+  const autoResizeTextarea = () => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+    
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+    
+    // Calculate new height with max of 5 lines (roughly 120px)
+    const lineHeight = 24; // Approximate line height in pixels
+    const maxHeight = lineHeight * 5; // Max 5 lines
+    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    
+    textarea.style.height = `${newHeight}px`;
+  };
+
+  useEffect(() => {
+    autoResizeTextarea();
+  }, [newComment]);
 
   useEffect(() => {
     console.log('ItemComments mounted for item:', itemId, 'with profiles:', profiles.length);
@@ -263,6 +284,11 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
       setNewComment('');
       fetchComments();
       
+      // Reset textarea height
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+      }
+      
       // Scroll to bottom after adding comment
       setTimeout(() => {
         if (scrollRef.current) {
@@ -316,7 +342,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setNewComment(value);
     
@@ -519,21 +545,28 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
         <div className="relative">
           <Popover open={showMentionPopover} onOpenChange={setShowMentionPopover}>
             <PopoverTrigger asChild>
-              <div className="flex gap-2">
-                <Input
+              <div className="flex gap-2 items-end">
+                <Textarea
                   ref={inputRef}
                   value={newComment}
                   onChange={handleInputChange}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSubmit()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    }
+                  }}
                   placeholder="Add a comment... (use @ to mention)"
                   disabled={loading}
-                  className="flex-1"
+                  className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+                  rows={1}
                 />
                 <Button
                   type="button"
                   size="sm"
                   onClick={handleSubmit}
                   disabled={!newComment.trim() || loading}
+                  className="mb-1"
                 >
                   <Send className="h-4 w-4" />
                 </Button>

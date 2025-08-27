@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from '@/hooks/use-toast';
 import { Send, Trash2, CheckCircle, Circle, AtSign } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface Profile {
   id: string;
@@ -39,6 +40,7 @@ interface ItemCommentsProps {
 }
 
 export function ItemComments({ itemId, currentUserId, profiles, readOnly = false }: ItemCommentsProps) {
+  const { isAdmin } = useAdminStatus();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -467,7 +469,7 @@ export function ItemComments({ itemId, currentUserId, profiles, readOnly = false
                             {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                           </span>
                         </div>
-                        {!readOnly && (
+                        {!readOnly && isAdmin && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               type="button"

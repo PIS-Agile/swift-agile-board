@@ -66,6 +66,7 @@ interface Item {
   }>;
   comment_count?: number;
   has_user_mentions?: boolean;
+  is_open?: boolean;
 }
 
 interface Profile {

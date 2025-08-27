@@ -9,7 +9,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ItemDialogV3 } from './ItemDialogV3';
 import { toast } from '@/hooks/use-toast';
-import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare } from 'lucide-react';
+import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare, Lock, LockOpen, Eye } from 'lucide-react';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface Item {
   id: string;
@@ -40,6 +41,7 @@ interface Item {
   }>;
   comment_count?: number;
   has_user_mentions?: boolean;
+  is_open?: boolean;
 }
 
 interface Profile {
@@ -58,6 +60,7 @@ interface KanbanItemProps {
 }
 
 export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpdate }: KanbanItemProps) {
+  const { isAdmin } = useAdminStatus();
   const [isHovered, setIsHovered] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -69,6 +72,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
+    canDrag: isAdmin, // Only admins can drag items
   });
 
   const handleDelete = async () => {
@@ -112,9 +116,11 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
     <>
       <Card
           ref={drag}
-          className={`kanban-item cursor-pointer ${
-            isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : 'cursor-pointer hover:shadow-md transition-shadow'
-          } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''}`}
+          className={`kanban-item ${isAdmin ? 'cursor-pointer' : 'cursor-default'} ${
+            isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : isAdmin ? 'cursor-pointer hover:shadow-md transition-shadow' : 'hover:shadow-sm transition-shadow'
+          } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''} ${
+            item.is_open ? 'bg-green-50/30 dark:bg-green-950/10 border-green-200/50 dark:border-green-900/30' : ''
+          }`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onClick={handleCardClick}
@@ -126,6 +132,15 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
               <Badge variant="outline" className="text-xs px-1.5 py-0.5 font-mono flex-shrink-0">
                 #{item.item_id}
               </Badge>
+            )}
+            {item.is_open !== undefined && (
+              <div className="flex-shrink-0" title={item.is_open ? "Open" : "Closed"}>
+                {item.is_open ? (
+                  <LockOpen className="h-3.5 w-3.5 text-green-600/70 dark:text-green-500/50" />
+                ) : (
+                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+              </div>
             )}
             <h4 className="font-medium text-sm break-words">{item.name}</h4>
           </div>
@@ -141,25 +156,39 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem
-                  onSelect={() => {
-                    setEditDialogOpen(true);
-                    setDropdownOpen(false);
-                  }}
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  Edit Item
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onSelect={() => {
-                    setDeleteDialogOpen(true);
-                    setDropdownOpen(false);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Item
-                </DropdownMenuItem>
+                {isAdmin ? (
+                  <>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        setEditDialogOpen(true);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      <Edit3 className="h-4 w-4 mr-2" />
+                      Edit Item
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onSelect={() => {
+                        setDeleteDialogOpen(true);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Item
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setEditDialogOpen(true);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Item
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -289,6 +318,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 setEditDialogOpen(false);
               }}
               onCancel={() => setEditDialogOpen(false)}
+              readOnly={!isAdmin}
             />
           </div>
         </DialogContent>

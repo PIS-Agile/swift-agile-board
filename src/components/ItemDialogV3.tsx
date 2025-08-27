@@ -9,7 +9,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { MultiSelect, MultiSelectOption } from '@/components/ui/multi-select';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -18,7 +20,8 @@ import Link from '@tiptap/extension-link';
 import { 
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
   Heading1, Heading2, Heading3, Minus, Clock, Users, Calendar, 
-  Hash, Type, FileText, User, Undo, Redo, Link2, Share2, Check, MessageSquare 
+  Hash, Type, FileText, User, Undo, Redo, Link2, Share2, Check, MessageSquare,
+  Lock, LockOpen 
 } from 'lucide-react';
 import { ItemComments } from '@/components/ItemComments';
 
@@ -36,6 +39,7 @@ interface Item {
       email: string | null;
     };
   }>;
+  is_open?: boolean;
 }
 
 interface Profile {
@@ -251,6 +255,7 @@ function EditorToolbar({ editor }: { editor: Editor | null }) {
 }
 
 export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onSave, onCancel, readOnly = false }: ItemDialogV3Props) {
+  const { isAdmin } = useAdminStatus();
   const [name, setName] = useState(item?.name || '');
   const [estimatedTime, setEstimatedTime] = useState<string>(item?.estimated_time?.toString() || '');
   const [actualTime, setActualTime] = useState<string>(item?.actual_time?.toString() || '0');
@@ -258,6 +263,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
     item?.assignments.map(a => a.user_id) || []
   );
   const [selectedColumnId, setSelectedColumnId] = useState<string>(columnId);
+  const [isOpen, setIsOpen] = useState<boolean>(item?.is_open ?? true); // Default to open for new items
   const [loading, setLoading] = useState(false);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
@@ -456,6 +462,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
             estimated_time: estimatedTime ? parseFloat(estimatedTime) : null,
             actual_time: actualTime ? parseFloat(actualTime) : 0,
             column_id: selectedColumnId,
+            is_open: isOpen,
           })
           .eq('id', item.id);
 
@@ -563,6 +570,7 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
             project_id: projectId,
             position: nextPosition,
             item_id: nextItemId,
+            is_open: isOpen,
           })
           .select()
           .single();
@@ -872,6 +880,29 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                       />
                     </div>
                   )}
+
+                  {/* Open/Closed Status - Only admins can change */}
+                  <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
+                    <Label className="text-right flex items-center justify-end gap-1">
+                      {isOpen ? (
+                        <LockOpen className="h-3 w-3 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span className="text-sm">Status</span>
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={isOpen}
+                        onCheckedChange={setIsOpen}
+                        disabled={readOnly || !isAdmin}
+                        className={isOpen ? 'data-[state=checked]:bg-green-600' : ''}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {isOpen ? 'Open - Editable by all' : 'Closed - Admin only'}
+                      </span>
+                    </div>
+                  </div>
                   
                   {/* Column */}
                   {columns && columns.length > 0 && (

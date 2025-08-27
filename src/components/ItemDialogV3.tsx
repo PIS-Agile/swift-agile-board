@@ -21,7 +21,7 @@ import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered, 
   Heading1, Heading2, Heading3, Minus, Clock, Users, Calendar, 
   Hash, Type, FileText, User, Undo, Redo, Link2, Share2, Check, MessageSquare,
-  Lock, LockOpen 
+  CheckCircle2, AlertCircle 
 } from 'lucide-react';
 import { ItemComments } from '@/components/ItemComments';
 
@@ -895,25 +895,20 @@ export function ItemDialogV3({ item, columnId, projectId, profiles, columns, onS
                     </div>
                   )}
 
-                  {/* Open/Closed Status - Only visible to admins */}
+                  {/* Verification Status - Only visible to admins */}
                   {isAdmin && (
                     <div className="grid grid-cols-[120px,1fr] gap-4 items-center">
                       <Label className="text-right flex items-center justify-end gap-1">
-                        {isOpen ? (
-                          <LockOpen className="h-3 w-3 text-green-600 dark:text-green-400" />
-                        ) : (
-                          <Lock className="h-3 w-3 text-muted-foreground" />
-                        )}
                         <span className="text-sm">Status</span>
                       </Label>
                       <div className="flex items-center gap-2">
                         <Switch
-                          checked={isOpen}
-                          onCheckedChange={setIsOpen}
-                          className={isOpen ? 'data-[state=checked]:bg-green-600' : ''}
+                          checked={!isOpen}
+                          onCheckedChange={(checked) => setIsOpen(!checked)}
+                          className={!isOpen ? 'data-[state=checked]:bg-primary' : ''}
                         />
                         <span className="text-sm text-muted-foreground">
-                          {isOpen ? 'Open - Editable by all' : 'Closed - Admin only'}
+                          {isOpen ? 'Unverified - Editable by all' : 'Verified - Admin only'}
                         </span>
                       </div>
                     </div>

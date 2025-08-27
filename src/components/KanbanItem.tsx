@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ItemDialogV3 } from './ItemDialogV3';
 import { toast } from '@/hooks/use-toast';
-import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare, Lock, LockOpen, Eye } from 'lucide-react';
+import { Clock, User, Edit3, Trash2, MoreHorizontal, MessageSquare, Eye } from 'lucide-react';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface Item {
@@ -119,7 +119,7 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
           className={`kanban-item ${(isAdmin || item.is_open === true) ? 'cursor-pointer' : 'cursor-default'} ${
             isDragging ? 'opacity-50 kanban-item-dragging cursor-grabbing' : (isAdmin || item.is_open === true) ? 'cursor-pointer hover:shadow-md transition-shadow' : 'hover:shadow-sm transition-shadow'
           } ${(editDialogOpen || deleteDialogOpen) ? 'pointer-events-none' : ''} ${
-            item.is_open ? 'bg-green-50/30 dark:bg-green-950/10 border-green-200/50 dark:border-green-900/30' : ''
+            item.is_open ? 'bg-emerald-900/5 dark:bg-emerald-950/20 border-emerald-700/20 dark:border-emerald-800/30' : ''
           }`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -133,14 +133,10 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
                 #{item.item_id}
               </Badge>
             )}
-            {item.is_open !== undefined && (
-              <div className="flex-shrink-0" title={item.is_open ? "Open" : "Closed"}>
-                {item.is_open ? (
-                  <LockOpen className="h-3.5 w-3.5 text-green-600/70 dark:text-green-500/50" />
-                ) : (
-                  <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-                )}
-              </div>
+            {item.is_open === true && (
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5 bg-emerald-900/10 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-700/20 dark:border-emerald-800/30 flex-shrink-0">
+                Unverified
+              </Badge>
             )}
             <h4 className="font-medium text-sm break-words">{item.name}</h4>
           </div>
@@ -304,7 +300,14 @@ export function KanbanItem({ item, columnId, projectId, profiles, columns, onUpd
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="h-[85vh] max-h-[900px] max-w-7xl overflow-hidden flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
-            <DialogTitle>Edit Item {item.item_id ? `#${item.item_id}` : ''}</DialogTitle>
+            <DialogTitle>
+              {isAdmin || item.is_open === true ? 'Edit' : 'View'} Item {item.item_id ? `#${item.item_id}` : ''}
+              {item.is_open !== undefined && (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  ({item.is_open ? 'Unverified' : 'Verified'})
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden min-h-0">
             <ItemDialogV3

@@ -30,6 +30,13 @@ interface Column {
   project_id: string;
 }
 
+interface CustomField {
+  id: string;
+  name: string;
+  field_type: string;
+  options?: string[];
+}
+
 interface Item {
   id: string;
   item_id: number;
@@ -81,6 +88,7 @@ const Index = () => {
   const [columns, setColumns] = useState<Column[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   const [newColumnDialogOpen, setNewColumnDialogOpen] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
@@ -180,6 +188,24 @@ const Index = () => {
       setColumns(data || []);
     } catch (error) {
       console.error('Error fetching columns:', error);
+    }
+  }, [selectedProjectId]);
+
+  const fetchCustomFields = useCallback(async () => {
+    if (!selectedProjectId) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('custom_fields')
+        .select('*')
+        .eq('project_id', selectedProjectId)
+        .order('position', { ascending: true });
+
+      if (error) throw error;
+      console.log('📊 Fetched custom fields:', data?.length || 0);
+      setCustomFields(data || []);
+    } catch (error) {
+      console.error('Error fetching custom fields:', error);
     }
   }, [selectedProjectId]);
 
@@ -361,8 +387,9 @@ const Index = () => {
         fetchProject(),
         fetchProfiles(),
       ]);
-      // Then fetch columns and items
+      // Then fetch columns, custom fields and items
       await fetchColumns();
+      await fetchCustomFields();
       await fetchItems();
       // Always check for mentions project-wide
       await checkUserMentions();
@@ -373,15 +400,16 @@ const Index = () => {
         variant: "destructive",
       });
     }
-  }, [fetchColumns, fetchItems, checkUserMentions]);
+  }, [fetchColumns, fetchCustomFields, fetchItems, checkUserMentions]);
 
   // Simple callback for any data change
   const handleDataChange = useCallback(() => {
     console.log('🔄 Realtime data change detected, refreshing...');
     fetchColumns();
+    fetchCustomFields();
     fetchItems();
     checkUserMentions();
-  }, [fetchColumns, fetchItems, checkUserMentions]);
+  }, [fetchColumns, fetchCustomFields, fetchItems, checkUserMentions]);
 
   // Use the realtime subscription hook with reset capability
   const { isConnected, resetConnection } = useRealtimeWithReset({
@@ -402,6 +430,7 @@ const Index = () => {
   const forceRefresh = () => {
     console.log('🔄 Force refreshing data...');
     fetchColumns();
+    fetchCustomFields();
     fetchItems();
     checkUserMentions();
   };

@@ -20,12 +20,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Trello, Plus, FolderKanban, LogOut, User, Edit3, Trash2, MoreHorizontal, RefreshCw } from 'lucide-react';
+import { Trello, Plus, FolderKanban, LogOut, User, Edit3, Trash2, MoreHorizontal, RefreshCw, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 interface Project {
   id: string;
   name: string;
   description: string | null;
+  is_admin_only?: boolean;
 }
 
 interface Profile {
@@ -41,16 +44,19 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: AppSidebarProps) {
+  const { isAdmin } = useAdminStatus();
   const [projects, setProjects] = useState<Project[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [newProjectAdminOnly, setNewProjectAdminOnly] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editProjectName, setEditProjectName] = useState('');
   const [editProjectDescription, setEditProjectDescription] = useState('');
+  const [editProjectAdminOnly, setEditProjectAdminOnly] = useState(false);
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const { state } = useSidebar();
@@ -88,10 +94,9 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
 
   const fetchProjects = async () => {
     try {
+      // Use the helper function to get only visible projects
       const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: true });
+        .rpc('get_visible_projects');
 
       if (error) throw error;
       setProjects(data || []);
@@ -134,6 +139,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
         .update({
           name: editProjectName.trim(),
           description: editProjectDescription.trim() || null,
+          is_admin_only: editProjectAdminOnly,
         })
         .eq('id', editingProject.id)
         .select()
@@ -192,6 +198,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
     setEditingProject(project);
     setEditProjectName(project.name);
     setEditProjectDescription(project.description || '');
+    setEditProjectAdminOnly(project.is_admin_only || false);
     setEditDialogOpen(true);
   };
 
@@ -210,6 +217,7 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
             name: newProjectName.trim(),
             description: newProjectDescription.trim() || null,
             created_by: user.id,
+            is_admin_only: newProjectAdminOnly,
           },
         ])
         .select()
@@ -220,11 +228,12 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
       setProjects([...projects, data]);
       setNewProjectName('');
       setNewProjectDescription('');
+      setNewProjectAdminOnly(false);
       setCreateDialogOpen(false);
       
       toast({
         title: "Project created",
-        description: `${data.name} has been created successfully.`,
+        description: `${data.name} has been created successfully${newProjectAdminOnly ? ' (Admin-only)' : ''}.`,
       });
     } catch (error: any) {
       toast({
@@ -294,7 +303,14 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
                       className="justify-start flex-1"
                     >
                       <FolderKanban className="h-4 w-4" />
-                      {!isCollapsed && <span>{project.name}</span>}
+                      {!isCollapsed && (
+                        <div className="flex items-center gap-2 flex-1">
+                          <span>{project.name}</span>
+                          {project.is_admin_only && (
+                            <Shield className="h-3 w-3 text-muted-foreground" title="Admin only" />
+                          )}
+                        </div>
+                      )}
                     </SidebarMenuButton>
                     {!isCollapsed && (hoveredProjectId === project.id || dropdownOpen === project.id) && project.id !== '00000000-0000-0000-0000-000000000001' && (
                       <DropdownMenu 
@@ -372,6 +388,24 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
                           rows={3}
                         />
                       </div>
+                      {isAdmin && (
+                        <div className="flex items-center space-x-2 rounded-lg border p-3">
+                          <Shield className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <Label htmlFor="admin-only" className="text-sm font-medium">
+                              Admin Only
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              Only administrators can see this project
+                            </p>
+                          </div>
+                          <Switch
+                            id="admin-only"
+                            checked={newProjectAdminOnly}
+                            onCheckedChange={setNewProjectAdminOnly}
+                          />
+                        </div>
+                      )}
                       <div className="flex justify-end gap-2">
                         <Button
                           type="button"
@@ -456,6 +490,24 @@ export function AppSidebar({ selectedProjectId, onProjectSelect, onSyncClick }: 
                 rows={3}
               />
             </div>
+            {isAdmin && editingProject?.id !== '00000000-0000-0000-0000-000000000001' && (
+              <div className="flex items-center space-x-2 rounded-lg border p-3">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1">
+                  <Label htmlFor="edit-admin-only" className="text-sm font-medium">
+                    Admin Only
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Only administrators can see this project
+                  </p>
+                </div>
+                <Switch
+                  id="edit-admin-only"
+                  checked={editProjectAdminOnly}
+                  onCheckedChange={setEditProjectAdminOnly}
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button
                 type="button"

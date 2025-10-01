@@ -2,6 +2,12 @@
   command = "npm run build"
   publish = "dist"
 
+# Security: Prevent test files from being accessible
+[[headers]]
+  for = "/test-*.html"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

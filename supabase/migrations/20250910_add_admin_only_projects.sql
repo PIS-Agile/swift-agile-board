@@ -13,28 +13,31 @@ CREATE INDEX IF NOT EXISTS idx_projects_is_admin_only ON public.projects(is_admi
 -- UPDATE RLS POLICIES FOR ADMIN-ONLY PROJECTS
 -- ============================================
 
--- Drop existing SELECT policy
+-- Drop existing SELECT policies
 DROP POLICY IF EXISTS "Authenticated users can view all projects" ON public.projects;
+DROP POLICY IF EXISTS "Users can view appropriate projects" ON public.projects;
 
 -- Create new SELECT policy that respects admin-only flag
 CREATE POLICY "Users can view appropriate projects" ON public.projects
 FOR SELECT TO authenticated
 USING (
   -- Non-admin-only projects are visible to everyone
-  (is_admin_only = false)
+  COALESCE(is_admin_only, false) = false
   OR 
   -- Admin-only projects are only visible to admins
-  (is_admin_only = true AND EXISTS (
+  EXISTS (
     SELECT 1 FROM public.profiles 
     WHERE profiles.id = auth.uid() 
     AND profiles.is_admin = true
-  ))
+  )
 );
 
 -- Update INSERT policy to allow setting is_admin_only (only admins can set it to true)
 DROP POLICY IF EXISTS "only_admins_can_create_projects" ON public.projects;
+DROP POLICY IF EXISTS "Admins can create projects" ON public.projects;
+DROP POLICY IF EXISTS "Admins can create projects with admin-only flag" ON public.projects;
 
-CREATE POLICY "Admins can create projects with admin-only flag" ON public.projects
+CREATE POLICY "Admins can create projects" ON public.projects
 FOR INSERT TO authenticated
 WITH CHECK (
   -- Must be an admin to create any project
@@ -43,21 +46,11 @@ WITH CHECK (
     WHERE profiles.id = auth.uid() 
     AND profiles.is_admin = true
   )
-  AND
-  -- If setting is_admin_only to true, must be an admin
-  (
-    is_admin_only = false 
-    OR 
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.is_admin = true
-    )
-  )
 );
 
 -- Update UPDATE policy to prevent non-admins from changing admin-only flag
 DROP POLICY IF EXISTS "only_admins_can_update_projects" ON public.projects;
+DROP POLICY IF EXISTS "Admins can update projects" ON public.projects;
 
 CREATE POLICY "Admins can update projects" ON public.projects
 FOR UPDATE TO authenticated
@@ -76,17 +69,6 @@ WITH CHECK (
     WHERE profiles.id = auth.uid() 
     AND profiles.is_admin = true
   )
-  AND
-  -- If changing is_admin_only to true, must be an admin
-  (
-    is_admin_only = (SELECT is_admin_only FROM public.projects WHERE id = projects.id)
-    OR 
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.is_admin = true
-    )
-  )
 );
 
 -- ============================================
@@ -95,6 +77,7 @@ WITH CHECK (
 
 -- Update columns policy to respect admin-only projects
 DROP POLICY IF EXISTS "Authenticated users can view all columns" ON public.columns;
+DROP POLICY IF EXISTS "Users can view columns in appropriate projects" ON public.columns;
 
 CREATE POLICY "Users can view columns in appropriate projects" ON public.columns
 FOR SELECT TO authenticated
@@ -116,6 +99,7 @@ USING (
 
 -- Update items policy to respect admin-only projects
 DROP POLICY IF EXISTS "Authenticated users can view all items" ON public.items;
+DROP POLICY IF EXISTS "Users can view items in appropriate projects" ON public.items;
 
 CREATE POLICY "Users can view items in appropriate projects" ON public.items
 FOR SELECT TO authenticated
@@ -138,6 +122,7 @@ USING (
 
 -- Update custom_fields policy to respect admin-only projects  
 DROP POLICY IF EXISTS "Authenticated users can view all custom fields" ON public.custom_fields;
+DROP POLICY IF EXISTS "Users can view custom fields in appropriate projects" ON public.custom_fields;
 
 CREATE POLICY "Users can view custom fields in appropriate projects" ON public.custom_fields
 FOR SELECT TO authenticated
